@@ -1,0 +1,28 @@
+{
+  "name": "reinvently/on-demand/core",
+  "description": "",
+  "keywords": [""],
+  "homepage": "",
+  "type": "yii2-extension",
+  "license": "Apache-2.0",
+  "authors": [
+    {
+      "name": "Reinvently",
+      "email": "",
+      "homepage": "",
+      "role": "Developer"
+    }
+  ],
+  "support": {
+    "issues": "",
+    "source": ""
+  },
+  "require": {
+    "yiisoft/yii2": ">=2.0.9"
+  },
+  "autoload": {
+    "psr-4": {
+      "reinvently\\ondemand\\core\\": "src"
+    }
+  }
+}

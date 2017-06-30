@@ -1,0 +1,6 @@
+{
+    "require": {
+        "yiisoft/yii2-mongodb": "~2.0.0",
+        "miloschuman/yii2-highcharts-widget": "~4.2.0"
+    }
+}
