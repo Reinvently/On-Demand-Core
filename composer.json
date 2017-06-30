@@ -1,21 +1,27 @@
 {
   "name": "reinvently/on-demand/core",
   "description": "",
-  "keywords": [""],
-  "homepage": "",
+  "keywords": [
+    "Reinvently",
+    "yii",
+    "yii2",
+    "yii 2",
+    "extension"
+  ],
+  "homepage": "https://github.com/Reinvently/On-Demand-Core",
   "type": "yii2-extension",
   "license": "Apache-2.0",
   "authors": [
     {
       "name": "Reinvently",
-      "email": "",
-      "homepage": "",
+      "email": "Hello@reinvently.com",
+      "homepage": "http://reinvently.com/",
       "role": "Developer"
     }
   ],
   "support": {
-    "issues": "",
-    "source": ""
+    "issues": "https://github.com/Reinvently/On-Demand-Core/issues",
+    "source": "https://github.com/Reinvently/On-Demand-Core"
   },
   "require": {
     "yiisoft/yii2": ">=2.0.9"
