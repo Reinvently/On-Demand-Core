@@ -29,6 +29,7 @@ use yii\web\IdentityInterface;
  * @property int $createdAt
  * @property int $updatedAt
  *
+ * @method User getIdentity(bool $autoRenew)
  */
 class User extends CoreModel implements IdentityInterface, ApiInterface
 {
@@ -38,6 +39,9 @@ class User extends CoreModel implements IdentityInterface, ApiInterface
 
     /** @var Client */
     public static $clientModelClass = Client::class;
+
+    /** @var Role */
+    public static $RoleModelClass = Role::class;
 
     /** @var Client */
     public $currentClient;

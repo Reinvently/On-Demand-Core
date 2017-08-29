@@ -12,15 +12,24 @@ use yii\base\Behavior;
 
 class State extends Behavior
 {
+    /** @var StateMachine */
     protected $_machine;
     protected $_name;
     protected $_transitsTo = [];
 
-    public function __construct($name, StateMachine $owner, $transitsTo = [])
+    /**
+     * State constructor.
+     * @param string $name
+     * @param StateMachine $owner
+     * @param array $transitsTo
+     * @param array $config
+     */
+    public function __construct($name, StateMachine $owner, $transitsTo = [], array $config = [])
     {
         $this->setName($name);
         $this->setMachine($owner);
         $this->setTransitsTo($transitsTo);
+        parent::__construct($config);
     }
 
     /**
@@ -72,27 +81,69 @@ class State extends Behavior
         return $this->_transitsTo;
     }
 
-
-    public function beforeEnter()
+    /**
+     * @param State $toState
+     * @param null $params
+     * @return bool
+     */
+    public function beforeEnter(State $toState, $params = null)
     {
+        if (!$toState || !(is_array($params) || $params === null)) {
+            return false;
+        }
+
         return true;
     }
 
     /**
      * @param State $toState
+     * @param null $params
      * @return bool
      */
-    public function beforeExit(State $toState)
+    public function beforeExit(State $toState, $params = null)
     {
         // Check if current state can transit to $toState
-        if ($this->_machine->checkTransitionMap and !in_array($toState->getName(), $this->_transitsTo)) {
-            return false;
+
+        if (!$this->getMachine()->checkTransitionMap) {
+            return true;
         }
-        return true;
+
+        if (in_array($toState->getName(), $this->getTransitsTo())) {
+            return true;
+        }
+
+        $roleModelClass = $this->getMachine()->owner->roleModelClass;
+        $role = $roleModelClass::SYSTEM;
+        if (key_exists('user', $params)) {
+            $role = $params['user'];
+        }
+
+        foreach ($this->getTransitsTo() as $transit) {
+            if (isset($transit[0]) && isset($transit[1])) {
+                list($roles, $transitTo) = $transit;
+                if (
+                    $toState->getName() == $transitTo
+                    && in_array($role, $roles)
+                ) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
-    public function afterEnter(State $from)
+    /**
+     * @param State $fromState
+     * @param null $params
+     * @return bool
+     */
+    public function afterEnter(State $fromState, $params = null)
     {
+        if (!$fromState || !(is_array($params) || $params === null)) {
+            return false;
+        }
+
         return true;
     }
 

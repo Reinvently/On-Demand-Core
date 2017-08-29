@@ -57,7 +57,7 @@ abstract class ApiStateMachineController extends \reinvently\ondemand\core\contr
                     \Yii::$app->response->setStatusCode(404);
                     return $this->getTransport()->responseMessage('Object not found');
                 }
-                if ($object->transition($state)) {
+                if ($object->transition($state, ['user' => $this->getUser()])) {
                     return $this->getTransport()->responseScalar();
                 } else {
                     return $this->getTransport()->responseMessage($object->getStateMachineError());

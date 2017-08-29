@@ -12,6 +12,7 @@ use \yii\base\Model;
 
 class Role extends Model
 {
+    const SYSTEM = 0;
     const ADMIN = 1;
     const USER = 2;
     const GUEST = 3;

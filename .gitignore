@@ -12,9 +12,6 @@ nbproject
 # windows thumbnail cache
 Thumbs.db
 
-# composer itself is not needed
-composer.lock
-
 # Mac DS_Store Files
 .DS_Store
 
@@ -26,5 +23,5 @@ phpunit.phar
 # Nginx log
 /log
 
-# environment file
-environment.php
+# test project
+/basic

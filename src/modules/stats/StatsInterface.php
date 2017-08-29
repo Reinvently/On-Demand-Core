@@ -8,6 +8,8 @@
 namespace reinvently\ondemand\core\modules\stats;
 
 
+use yii\base\Object;
+
 interface StatsInterface
 {
 
@@ -15,7 +17,7 @@ interface StatsInterface
      * Returns the fully qualified name of this class.
      * @return string the fully qualified name of this class.
      *
-     * @see yii\base\Object::className()
+     * @see Object::className()
      */
     public static function className();
 

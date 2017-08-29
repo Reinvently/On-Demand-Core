@@ -14,6 +14,7 @@
 namespace reinvently\ondemand\core\controllers\rest;
 
 
+use reinvently\ondemand\core\modules\user\models\User;
 use Yii;
 
 abstract class ApiController extends \yii\rest\ActiveController
@@ -91,9 +92,21 @@ abstract class ApiController extends \yii\rest\ActiveController
         return $serializer->serialize($result);
     }
 
+    /**
+     * @return \reinvently\ondemand\core\components\transport\TransportInterface
+     */
     public function getTransport()
     {
         return Yii::$app->transport;
+    }
+
+    /**
+     * @param bool $autoRenew
+     * @return User
+     */
+    public function getUser($autoRenew = false)
+    {
+        return Yii::$app->user->getIdentity($autoRenew);
     }
 
 }
