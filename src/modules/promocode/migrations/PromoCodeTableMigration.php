@@ -7,6 +7,7 @@
 
 namespace reinvently\ondemand\core\modules\promocode\migrations;
 
+use reinvently\ondemand\core\modules\promocode\models\PromoCode;
 use yii\db\Migration;
 
 /**
@@ -23,21 +24,29 @@ class PromoCodeTableMigration extends Migration
      */
     public function up()
     {
-        $this->createTable('promo_code', [
+        $this->createTable(PromoCode::tableName(), [
             'id' => $this->primaryKey(),
-            'code' => $this->string(255),
-            'type' => $this->integer(2)->notNull()->unsigned(),
-            'promoType' => $this->integer(2)->notNull()->unsigned(),
-            'userId' => $this->integer(10)->notNull()->unsigned(),
-            'amount' => $this->integer(10)->notNull()->unsigned(),
-            'minAmount' => $this->integer(10)->unsigned()->defaultValue(0),
-            'usedCount' => $this->integer(10)->unsigned()->notNull()->defaultValue(0),
-            'days' => $this->string(255),
-            'startAt' => $this->integer(10)->unsigned(),
-            'expireAt' => $this->integer(10)->unsigned(),
-            'createdAt' => $this->integer(10)->unsigned()->notNull(),
-            'updatedAt' => $this->integer(10)->unsigned()->notNull(),
+            'code' => $this->string()->notNull(),
+            'label' => $this->string(),
+            'description' => $this->text(),
+            'type' => $this->integer()->notNull()->unsigned(),
+            'userId' => $this->integer()->notNull()->unsigned(),
+            'isPercent' => $this->boolean()->notNull(),
+            'percent' => $this->integer()->notNull(),
+            'static' => $this->integer()->notNull(),
+            'minPrice' => $this->integer()->notNull()->unsigned(),
+            'usedNumbers' => $this->integer()->notNull()->unsigned(),
+            'maxNumbers'=> $this->integer()->notNull()->unsigned(),
+            'startAt' => $this->integer()->unsigned(),
+            'expireAt' => $this->integer()->unsigned(),
+            'createdAt' => $this->integer()->unsigned()->notNull(),
+            'updatedAt' => $this->integer()->unsigned()->notNull(),
         ], 'ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci');
+
+        $this->createIndex('code', PromoCode::tableName(), 'code', true);
+        $this->createIndex('userId', PromoCode::tableName(), 'userId');
+
+        return true;
     }
 
     /**

@@ -12,6 +12,7 @@ use reinvently\ondemand\core\components\helpers\DateHelper;
 use reinvently\ondemand\core\components\model\CoreModel;
 use reinvently\ondemand\core\components\transport\ApiInterface;
 use reinvently\ondemand\core\components\transport\ApiTransportTrait;
+use reinvently\ondemand\core\modules\promocode\exceptions\InvalidPromoCodeException;
 use reinvently\ondemand\core\modules\user\models\User;
 use yii\helpers\Json;
 
@@ -21,13 +22,16 @@ use yii\helpers\Json;
  *
  * @property int id
  * @property string code
+ * @property string label
+ * @property string description
  * @property int type
- * @property int promoType
  * @property int userId
- * @property int amount
- * @property int minAmount
- * @property int usedCount
- * @property string days
+ * @property boolean isPercent
+ * @property int percent
+ * @property int static
+ * @property int minPrice
+ * @property int usedNumbers
+ * @property int maxNumbers
  * @property int startAt
  * @property int expireAt
  * @property int createdAt
@@ -38,27 +42,14 @@ class PromoCode extends CoreModel implements ApiInterface
 {
     use ApiTransportTrait;
 
-    const TYPE_STATIC = 0;
-    const TYPE_PERCENT = 1;
-
-    const PROMO_TYPE_MANUAL = 0;
-    const PROMO_TYPE_FIRST_REVIEW = 1;
-    const PROMO_TYPE_PERSONAL_DISCOUNT = 2;
-    const PROMO_TYPE_SUBSCRIPTION = 3;
-    const PROMO_TYPE_GIFT = 4;
-    const PROMO_TYPE_SUBSCRIPTION_IDENTIFIER = 5;
-    const PROMO_TYPE_SHARE_PERSONAL = 6;
+    const TYPE_MANUAL = 1;
 
     /** @var User */
     public $userModelClass = User::class;
 
     public static $types = [
-        self::TYPE_STATIC => 'Static',
-        self::TYPE_PERCENT => 'Percent',
+        self::TYPE_MANUAL => 'Manual',
     ];
-
-    public $startAtDate;
-    public $expireAtDate;
 
     /**
      * @return string
@@ -69,25 +60,41 @@ class PromoCode extends CoreModel implements ApiInterface
     }
 
     /**
-     * Constructor.
-     */
-    public function init()
-    {
-        parent::init();
-        $this->days = range(0, 6);
-    }
-
-    /**
      * @return array
      */
     public function rules()
     {
         return [
-            [['code', 'amount', 'type', 'promoType'], 'required'],
-            ['code', 'unique'],
-            ['minAmount', 'number'],
-            ['amount', 'number', 'min' => 1],
-            [['startAtDate', 'expireAtDate', 'days'], 'safe'],
+            [['code', 'type', 'userId', 'isPercent', 'percent', 'static', 'minPrice', 'usedNumbers', 'maxNumbers', 'createdAt', 'updatedAt'], 'required'],
+            [['description'], 'string'],
+            [['type', 'userId', 'isPercent', 'percent', 'static', 'minPrice', 'usedNumbers', 'maxNumbers', 'startAt', 'expireAt', 'createdAt', 'updatedAt'], 'integer'],
+            [['code', 'label'], 'string', 'max' => 255],
+            [['code'], 'unique'],
+        ];
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function attributeLabels()
+    {
+        return [
+            'id' => 'ID',
+            'code' => 'Code',
+            'label' => 'Label',
+            'description' => 'Description',
+            'type' => 'Type',
+            'userId' => 'User ID',
+            'isPercent' => 'Is Percent',
+            'percent' => 'Percent',
+            'static' => 'Static',
+            'minPrice' => 'Min Price',
+            'usedNumbers' => 'Used Numbers',
+            'maxNumbers' => 'Max Numbers',
+            'startAt' => 'Start At',
+            'expireAt' => 'Expire At',
+            'createdAt' => 'Created At',
+            'updatedAt' => 'Updated At',
         ];
     }
 
@@ -113,56 +120,10 @@ class PromoCode extends CoreModel implements ApiInterface
     {
         if ($insert) {
             $this->createdAt = time();
-            if (!$this->userId) {
-                $this->userId = \Yii::$app->user->id;
-            }
         }
         $this->updatedAt = time();
 
-        $this->convertAttributes();
-
         return parent::beforeSave($insert);
-    }
-
-    /**
-     *
-     */
-    private function convertAttributes()
-    {
-        $this->days = Json::encode($this->days);
-
-        $this->startAt = $this->startAtDate ? strtotime($this->startAtDate) : null;
-        $this->expireAt = $this->expireAtDate ? strtotime($this->expireAtDate) : null;
-    }
-
-    /**
-     * This method is called when the AR object is created and populated with the query result.
-     * The default implementation will trigger an [[EVENT_AFTER_FIND]] event.
-     * When overriding this method, make sure you call the parent implementation to ensure the
-     * event is triggered.
-     */
-    public function afterFind()
-    {
-        parent::afterFind();
-
-        $this->days = Json::decode($this->days);
-        $this->startAtDate = $this->startAt ? date('Y-m-d', $this->startAt) : null;
-        $this->expireAtDate = $this->expireAt ? date('Y-m-d', $this->expireAt) : null;
-    }
-
-    /**
-     * @return string
-     */
-    public function getDaysView()
-    {
-        $weekList = DateHelper::weekList();
-        $days = [];
-        if ($this->days) {
-            foreach ($this->days as $day) {
-                $days[] = $weekList[$day];
-            }
-        }
-        return implode(' ', $days);
     }
 
     /**
@@ -180,7 +141,21 @@ class PromoCode extends CoreModel implements ApiInterface
      */
     public function getItemForApi()
     {
-        // TODO: Implement getItemForApi() method.
+        return [
+            'id' => $this->id,
+            'code' => $this->code,
+            'label' => $this->label,
+            'description' => $this->description,
+            'type' => $this->type,
+            'isPercent' => $this->isPercent,
+            'percent' => $this->percent,
+            'static' => $this->static,
+            'minPrice' => $this->minPrice,
+            'usedNumbers' => $this->usedNumbers,
+            'maxNumbers' => $this->maxNumbers,
+            'startAt' => $this->startAt,
+            'expireAt' => $this->expireAt,
+        ];
     }
 
     /**
@@ -188,6 +163,79 @@ class PromoCode extends CoreModel implements ApiInterface
      */
     public function getItemShortForApi()
     {
-        // TODO: Implement getItemShortForApi() method.
+        return $this->getItemForApi();
+    }
+
+    /**
+     * @param $price
+     * @param null $userId
+     * @param array $params
+     * @return bool
+     * @throws InvalidPromoCodeException
+     */
+    public function check($price, $userId = null, $params = [])
+    {
+        if ($this->minPrice && $this->minPrice > $price) {
+            throw new InvalidPromoCodeException('The Price is less than minimal promo code price');
+        }
+
+        if ($this->startAt && $this->startAt > time()) {
+            throw new InvalidPromoCodeException('The Start Time has not yet come');
+        }
+
+        if ($this->expireAt && $this->expireAt < time()) {
+            throw new InvalidPromoCodeException('This Code is expired');
+        }
+
+        if ($this->userId && $this->userId != $userId) {
+            throw new InvalidPromoCodeException('This Code works only for specified User');
+        }
+
+        if ($this->maxNumbers && $this->maxNumbers >= $this->usedNumbers) {
+            throw new InvalidPromoCodeException('The promo code has expired by max numbers of usage');
+        }
+
+        return true;
+    }
+
+    /**
+     * @param int $price
+     * @param int $userId
+     * @param array $params
+     * @return int
+     */
+    public function getPriceAfterPromo($price, $userId = null, $params = [])
+    {
+        $this->check($price, $userId, $params);
+
+        $price = $this->handle($price, $userId, $params);
+
+        return $price;
+    }
+
+    /**
+     * @param int $price
+     * @param int $userId
+     * @param array $params
+     * @return int
+     */
+    protected function handle($price, $userId = null, $params = [])
+    {
+        if ($this->isPercent) {
+            $price = $price - $price * $this->percent / 100;
+        } else {
+            $price = $price - $this->static;
+        }
+
+        return $price;
+    }
+
+    /**
+     * @return bool
+     */
+    public function process()
+    {
+        $this->usedNumbers++;
+        return $this->save();
     }
 }
