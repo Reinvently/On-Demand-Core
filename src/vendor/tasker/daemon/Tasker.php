@@ -22,7 +22,7 @@ class Tasker
 {
     use SingletonTrait;
 
-//    const STATUS_DISABLE = 0;
+    const STATUS_DISABLE = 0;
     const STATUS_READY_TO_RUN = 1;
     const STATUS_WORKING_ON_TASK = 2;
     const STATUS_STUCK = 3;
@@ -135,9 +135,17 @@ SQL
 
         $maxId = array_pop(array_pop($arr));
 
+        $arr = $this->db->query("SELECT status from `tasker` WHERE id = $this->id");
+
+        if (empty($arr)) {
+            throw new \Error('Tasker not found');
+        }
+
+        $status = array_pop(array_pop($arr));
+
         $numbersOfTasker = Params::get(Params::PARAMS_NUMBERS_OF_TASKER);
 
-        return $this->id <= ($maxId - $numbersOfTasker);
+        return $this->id <= ($maxId - $numbersOfTasker) || $status == static::STATUS_DISABLE;
     }
 
     /**
