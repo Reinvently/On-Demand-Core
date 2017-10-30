@@ -9,12 +9,14 @@
 namespace reinvently\ondemand\core\modules\location\controllers;
 
 
+use reinvently\ondemand\core\controllers\rest\ApiController;
 use reinvently\ondemand\core\modules\location\models\Point;
 use reinvently\ondemand\core\modules\location\models\Type;
 use yii\data\ActiveDataProvider;
+use yii\filters\VerbFilter;
 use yii\web\BadRequestHttpException;
 
-abstract class ApiPointController extends \reinvently\ondemand\core\controllers\rest\ApiController
+abstract class ApiPointController extends ApiController
 {
     /** @var Point */
     public $modelClass = Point::class;
@@ -42,7 +44,7 @@ abstract class ApiPointController extends \reinvently\ondemand\core\controllers\
     {
         $verbs = [
             'verbs' => [
-                'class' => \yii\filters\VerbFilter::className(),
+                'class' => VerbFilter::className(),
                 'actions' => [
                     'search-by-circle' => ['get'],
                 ]
