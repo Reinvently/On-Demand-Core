@@ -11,7 +11,7 @@
  * Time: 16:19
  */
 
-require(__DIR__ . '/../../../vendor/yiisoft/yii2/BaseYii.php');
+require(__DIR__ . '/../../../../../../yiisoft/yii2/BaseYii.php');
 
 /**
  * Yii is a helper class serving common framework functionalities.
