@@ -257,7 +257,7 @@ class StateMachine extends Behavior implements StatsInterface, EventInterface
 //        $transition->from = $this->getState();
 //        $transition->to = $toState;
 //        /** @TODO raise transition event */
-        Yii::$app->eventManager->trigger(static::EVENT_BEFORE_EXIT, $this);
+        Yii::$app->eventManager->call(static::EVENT_BEFORE_EXIT, $this);
 
         return true;
     }
@@ -275,7 +275,7 @@ class StateMachine extends Behavior implements StatsInterface, EventInterface
 //        $transition->from = $fromState;
 //        $transition->to = $this->getState();
 //        /** @TODO raise transition event */
-        Yii::$app->eventManager->trigger(static::EVENT_AFTER_ENTER, $this);
+        Yii::$app->eventManager->call(static::EVENT_AFTER_ENTER, $this);
 
     }
 

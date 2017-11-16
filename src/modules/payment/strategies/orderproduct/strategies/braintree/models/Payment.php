@@ -61,7 +61,7 @@ class Payment extends \reinvently\ondemand\core\modules\payment\strategies\order
         $event = new CoverEvent();
         $event->container = $container;
 
-        \Yii::$app->eventManager->trigger(\reinvently\ondemand\core\components\payment\Payment::RAISE_EVENT_TOKEN, $this, $event);
+        \Yii::$app->eventManager->call(\reinvently\ondemand\core\components\payment\Payment::RAISE_EVENT_TOKEN, $this, $event);
     }
 
     public function canPay()
@@ -104,7 +104,7 @@ class Payment extends \reinvently\ondemand\core\modules\payment\strategies\order
         $event = new CoverEvent();
         $event->container = $c;
 
-        \Yii::$app->eventManager->trigger(\reinvently\ondemand\core\components\payment\Payment::RAISE_EVENT_AUTH, $this, $event);
+        \Yii::$app->eventManager->call(\reinvently\ondemand\core\components\payment\Payment::RAISE_EVENT_AUTH, $this, $event);
 
         if ($c->hasErrors()) {
             $this->saveErrorStatus();
@@ -121,7 +121,7 @@ class Payment extends \reinvently\ondemand\core\modules\payment\strategies\order
         $event = new CoverEvent();
         $event->container = $c;
 
-        \Yii::$app->eventManager->trigger(\reinvently\ondemand\core\components\payment\Payment::RAISE_EVENT_SALE, $this, $event);
+        \Yii::$app->eventManager->call(\reinvently\ondemand\core\components\payment\Payment::RAISE_EVENT_SALE, $this, $event);
 
         if ($c->hasErrors()) {
             $this->saveErrorStatus();

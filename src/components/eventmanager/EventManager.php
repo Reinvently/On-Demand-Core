@@ -39,10 +39,10 @@ abstract class EventManager extends Component
      * Example:
      *     public function initEventListeners()
      *    {
-     *      $this->on(Test2::RAISE_EVENT_TEST2, Test2::class, 'onEventT1');
-     *      $this->on(Test1::EVENT_TEST1, Test2::class, 'onEventT1');
-     *      $this->on(Test1::EVENT_TEST1, Test2::class, 'onEventT2');
-     *      $this->on(EventManager::EVENT_COVER, StatsComponent::class, 'onEvent');
+     *      $this->attache(Test2::RAISE_EVENT_TEST2, Test2::class, 'onEventT1');
+     *      $this->attache(Test1::EVENT_TEST1, Test2::class, 'onEventT1');
+     *      $this->attache(Test1::EVENT_TEST1, Test2::class, 'onEventT2');
+     *      $this->attache(EventManager::EVENT_COVER, StatsComponent::class, 'onEvent');
      *    }
      *
      * @return void
@@ -53,7 +53,7 @@ abstract class EventManager extends Component
      * Example:
      *     public function initRaiserListeners()
      *    {
-     *      $this->onRaise(Test2::RAISE_EVENT_TEST2, Test2::class, 'onEvent');
+     *      $this->attacheRaise(Test2::RAISE_EVENT_TEST2, Test2::class, 'onEvent');
      *    }
      *
      * @return void
@@ -66,7 +66,7 @@ abstract class EventManager extends Component
      * @param CoverEvent $event
      * @throws \Exception
      */
-    public function trigger($name, EventInterface $sender, CoverEvent $event = null)
+    public function call($name, EventInterface $sender, CoverEvent $event = null)
     {
         if (!$event) {
             $event = new CoverEvent();
@@ -84,8 +84,8 @@ abstract class EventManager extends Component
             parent::trigger($name, $event);
         } catch (\Exception $e) {
             throw $e;
-        } finally {
-            // возможно что-то нужно завершить
+        //} finally {
+            // todo
         }
     }
 
@@ -96,9 +96,9 @@ abstract class EventManager extends Component
      * @param null $data
      * @param bool $append
      */
-    public function onRaise($name, $class, $method, $data = null, $append = true)
+    public function attacheRaise($name, $class, $method, $data = null, $append = true)
     {
-        $this->on($name, $class, $method, $data, $append, true);
+        $this->attache($name, $class, $method, $data, $append, true);
     }
 
     /**
@@ -109,7 +109,7 @@ abstract class EventManager extends Component
      * @param bool $append
      * @param bool $raise
      */
-    public function on($name, $class, $method, $data = null, $append = true, $raise = false)
+    public function attache($name, $class, $method, $data = null, $append = true, $raise = false)
     {
         $handler = function (CoverEvent $e) use ($name, $class, $method, $data, $append, $raise) {
             /** @var EventInterface $class */

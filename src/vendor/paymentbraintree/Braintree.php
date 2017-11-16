@@ -101,7 +101,7 @@ class Braintree extends Component implements EventInterface
 
             if ($result->success) {
                 $c->setTransactionId($result->transaction->id);
-                Yii::$app->eventManager->trigger(Payment::EVENT_AUTH, $this);
+                Yii::$app->eventManager->call(Payment::EVENT_AUTH, $this);
             } else {
                 if ($result->transaction) {
                     $error = $result->message;
@@ -136,7 +136,7 @@ class Braintree extends Component implements EventInterface
         $result = \Braintree_Transaction::void($c->getTransactionId());
         if ($result->success) {
             //todo send params in event
-            Yii::$app->eventManager->trigger(Payment::EVENT_CANCEL_AUTH, $this);
+            Yii::$app->eventManager->call(Payment::EVENT_CANCEL_AUTH, $this);
             return true;
         }
         throw new BraintreeException($result->errors);
@@ -166,7 +166,7 @@ class Braintree extends Component implements EventInterface
                 if ($result->success) {
                     $c->setTransactionId($result->transaction->id);
                     //todo send params in event
-                    Yii::$app->eventManager->trigger(Payment::EVENT_CANCEL_SALE, $this);
+                    Yii::$app->eventManager->call(Payment::EVENT_CANCEL_SALE, $this);
                     return true;
                 } else {
                     if ($result->transaction) {
@@ -200,7 +200,7 @@ class Braintree extends Component implements EventInterface
         $result = \Braintree_Transaction::submitForSettlement($c->getTransactionId(), $c->getAmount());
 
         if ($result->success) {
-            Yii::$app->eventManager->trigger(Payment::EVENT_SALE, $this);
+            Yii::$app->eventManager->call(Payment::EVENT_SALE, $this);
             return true;
         }
 

@@ -27,14 +27,14 @@ class Test1 extends Model implements EventInterface
         $event = new CoverEvent();
         $event->container = $container; // for check example
         $container->messages[] = 'trigger EVENT_TEST1'; // for check example
-        \Yii::$app->eventManager->trigger(static::EVENT_TEST1, $this, $event);
+        \Yii::$app->eventManager->call(static::EVENT_TEST1, $this, $event);
 
         $event = new CoverEvent();
         $event->container = $container; // for check example
         $event->container->p1 = 1;
         try {
             $container->messages[] = 'trigger 1 RAISE_EVENT_TEST2'; // for check example
-            \Yii::$app->eventManager->trigger(Test2::RAISE_EVENT_TEST2, $this, $event);
+            \Yii::$app->eventManager->call(Test2::RAISE_EVENT_TEST2, $this, $event);
         } catch (\NoRequiredEventException $e) {
             throw $e;
         }
@@ -44,7 +44,7 @@ class Test1 extends Model implements EventInterface
         $event->container->p1 = 0;
         try {
             $container->messages[] = 'trigger 2 RAISE_EVENT_TEST2'; // for check example
-            \Yii::$app->eventManager->trigger(Test2::RAISE_EVENT_TEST2, $this, $event);
+            \Yii::$app->eventManager->call(Test2::RAISE_EVENT_TEST2, $this, $event);
         } catch (\NoRequiredEventException $e) {
             throw $e;
         }
@@ -62,7 +62,7 @@ class Test1 extends Model implements EventInterface
         $event->container->p1 = 0;
 
         try {
-            \Yii::$app->eventManager->trigger(Test2::RAISE_EVENT_TEST2, $this, $event);
+            \Yii::$app->eventManager->call(Test2::RAISE_EVENT_TEST2, $this, $event);
         } catch (\NoRequiredEventException $e) {
             var_export($event->container->getErrors());
             throw $e;
