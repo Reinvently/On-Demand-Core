@@ -8,10 +8,12 @@
 namespace reinvently\ondemand\core\components\statemachine\controllers;
 
 use reinvently\ondemand\core\components\statemachine\StateMachineModel;
+use reinvently\ondemand\core\controllers\rest\ApiController;
 use Yii;
+use yii\helpers\ArrayHelper;
 use yii\web\HttpException;
 
-abstract class ApiStateMachineController extends \reinvently\ondemand\core\controllers\rest\ApiController
+abstract class ApiStateMachineController extends ApiController
 {
     /**
      * @return StateMachineModel
@@ -29,7 +31,7 @@ abstract class ApiStateMachineController extends \reinvently\ondemand\core\contr
                 ]
             ],
         ];
-        return array_merge_recursive($verbs, parent::behaviors());
+        return ArrayHelper::merge($verbs, parent::behaviors());
     }
 
     public function actionState()

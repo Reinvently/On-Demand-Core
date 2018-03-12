@@ -139,6 +139,15 @@ class TransportJson implements TransportInterface
     }
 
     /**
+     * @param bool $success
+     * @return ResponseObject
+     */
+    public function responseSuccess($success = true)
+    {
+        return $this->convert($success);
+    }
+
+    /**
      * @param $exceptionData
      * @return ResponseObject
      */

@@ -19,6 +19,7 @@ use reinvently\ondemand\core\vendor\mapsdirections\addresses\AddressModel;
 use reinvently\ondemand\core\vendor\mapsdirections\addresses\GeoAddress;
 use reinvently\ondemand\core\vendor\mapsdirections\google\Response;
 use yii\filters\VerbFilter;
+use yii\helpers\ArrayHelper;
 use yii\web\BadRequestHttpException;
 
 class ApiLocationToolController extends ApiTameController
@@ -72,7 +73,7 @@ class ApiLocationToolController extends ApiTameController
                 ]
             ],
         ];
-        return array_merge_recursive($verbs, parent::behaviors());
+        return ArrayHelper::merge($verbs, parent::behaviors());
     }
 
 }

@@ -14,12 +14,16 @@
 namespace reinvently\ondemand\core\controllers\rest;
 
 
+use reinvently\ondemand\core\components\model\CoreModel;
+use reinvently\ondemand\core\modules\role\models\Role;
 use reinvently\ondemand\core\modules\user\models\User;
 use Yii;
+use yii\base\Controller;
+use yii\rest\ActiveController;
+use yii\web\ForbiddenHttpException;
 
-abstract class ApiController extends \yii\rest\ActiveController
+abstract class ApiController extends ActiveController
 {
-
     const JSON = 'on_demand_json';
 
     const UPDATE_SCENARIO = 'api/update';
@@ -27,14 +31,14 @@ abstract class ApiController extends \yii\rest\ActiveController
 
     public $serializer = Serializer::class;
 
-    //public $updateScenario = self::UPDATE_SCENARIO;
-    //public $createScenario = self::CREATE_SCENARIO;
+    public $updateScenario = self::UPDATE_SCENARIO;
+    public $createScenario = self::CREATE_SCENARIO;
 
     public function init()
     {
         parent::init();
-        \Yii::$app->getResponse()->format = self::JSON;
-        \Yii::$app->user->enableSession = false;
+        Yii::$app->getResponse()->format = self::JSON;
+        Yii::$app->user->enableSession = false;
     }
 
     protected function allowedRoutes()
@@ -59,7 +63,7 @@ abstract class ApiController extends \yii\rest\ActiveController
             'class' => SearchAction::class,
             'modelClass' => $this->modelClass,
             'checkAccess' => [$this, 'checkAccess'],
-            'params' => \Yii::$app->request->get()
+            'params' => Yii::$app->request->get()
         ];
 
         return $actions;
@@ -73,15 +77,15 @@ abstract class ApiController extends \yii\rest\ActiveController
         return $verbs;
     }
 
-    public function beforeAction($action)
-    {
-        return parent::beforeAction($action);
-    }
-
+    /**
+     * @param \yii\base\Action $action
+     * @param mixed $result
+     * @return mixed
+     */
     public function afterAction($action, $result)
     {
         /** @var mixed $result */
-        $result = \yii\base\Controller::afterAction($action, $result);
+        $result = Controller::afterAction($action, $result);
 
         /** @var Serializer $serializer */
         $serializer = Yii::createObject($this->serializer);
@@ -89,7 +93,9 @@ abstract class ApiController extends \yii\rest\ActiveController
 
 //        $result->setPagination(['pageSize' => 5]);
 
-        return $serializer->serialize($result);
+        $result = $serializer->serialize($result);
+
+        return $result;
     }
 
     /**
@@ -107,6 +113,43 @@ abstract class ApiController extends \yii\rest\ActiveController
     public function getUser($autoRenew = false)
     {
         return Yii::$app->user->getIdentity($autoRenew);
+    }
+
+    public function fullAccessActions() {
+        return [];
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function checkAccess($action, $model = null, $params = [])
+    {
+        if (in_array($action, $this->fullAccessActions())) {
+            return;
+        }
+
+        $userId = null;
+        /** @var CoreModel $model */
+        if ($model instanceof User) {
+            $userId = $model->id;
+        } elseif ($model->hasAttribute('userId')) {
+            $userId = $model->userId;
+        } else {
+            return;
+        }
+
+        /** @var User $user */
+        $user = Yii::$app->getUser()->identity;
+
+        if ($user->roleId == Role::ADMIN) {
+            return;
+        }
+
+        if ($userId == Yii::$app->getUser()->id) {
+            return;
+        }
+
+        throw new ForbiddenHttpException();
     }
 
 }

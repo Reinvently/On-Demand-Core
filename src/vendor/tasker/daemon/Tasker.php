@@ -27,6 +27,7 @@ class Tasker
     const STATUS_WORKING_ON_TASK = 2;
     const STATUS_STUCK = 3;
 
+    const TASK_STATUS_WAITING = 0;
     const TASK_STATUS_READY_TO_RUN = 1;
     const TASK_STATUS_LAUNCHED = 2;
     const TASK_STATUS_FINISHED_SUCCESSFUL = 3;

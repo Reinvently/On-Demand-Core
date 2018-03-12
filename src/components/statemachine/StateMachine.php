@@ -69,7 +69,15 @@ class StateMachine extends Behavior implements StatsInterface, EventInterface
      */
     public function getState()
     {
-        $name = $this->getStateName();
+        return $this->getStateByName($this->getStateName());
+    }
+
+    /**
+     * @param string $name
+     * @return State|null
+     */
+    public function getStateByName($name)
+    {
         return isset($this->_states[$name]) ? $this->_states[$name] : null;
     }
 
@@ -110,11 +118,16 @@ class StateMachine extends Behavior implements StatsInterface, EventInterface
             if (!isset($state['transitsTo'])) {
                 $state['transitsTo'] = [];
             }
+            $label = null;
+            if (isset($state['label'])) {
+                $label = $state['label'];
+            }
 
             //Yii::createComponent($state, $state['name'], $this);
             $class = $state['class'];
             /** @var State $state */
             $state = new $class($state['name'], $this, $state['transitsTo']);
+            $state->setLabel($label);
 
             return $this->_states[$state->getName()] = $state;
 
@@ -296,7 +309,7 @@ class StateMachine extends Behavior implements StatsInterface, EventInterface
             'defaultStateName' => $this->defaultStateName,
         ];
         foreach($this->_states as $state) {
-            $json['states'][] = $state->getName();
+            $json['states'][$state->getName()] = $state->getLabel();
             $json['stateMachine'][$state->getName()] = $state->getTransitsTo();
         }
         return $json;

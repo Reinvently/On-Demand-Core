@@ -7,12 +7,11 @@
 
 namespace reinvently\ondemand\core\modules\order\models;
 
-use reinvently\ondemand\core\components\statemachine\State;
-use reinvently\ondemand\core\components\statemachine\StateMachine;
 use reinvently\ondemand\core\components\statemachine\StateMachineModel;
 use reinvently\ondemand\core\components\transport\ApiTransportTrait;
 use reinvently\ondemand\core\modules\address\models\Address;
 use reinvently\ondemand\core\modules\orderproduct\models\OrderProduct;
+use reinvently\ondemand\core\modules\user\models\User;
 use yii\db\BaseActiveRecord;
 
 
@@ -31,7 +30,9 @@ use yii\db\BaseActiveRecord;
  * @property int createdAt
  * @property int updatedAt
  *
- * @property OrderProduct orderProduct
+ * @property OrderProduct[] orderProducts
+ * @property User user
+ * @property Address address
  */
 abstract class Order extends StateMachineModel
 {
@@ -39,7 +40,8 @@ abstract class Order extends StateMachineModel
 
     public $orderProductModelClass = OrderProduct::class;
 
-    /*public function getStateMachineParams()
+    /* todo example of state machine
+    public function getStateMachineParams()
     {
         return [
             'class' => StateMachine::class,
@@ -99,7 +101,7 @@ abstract class Order extends StateMachineModel
     /**
      * @return \yii\db\ActiveQuery
      */
-    public function getOrderProduct()
+    public function getOrderProducts()
     {
         /** @var BaseActiveRecord $class */
         $class = $this->orderProductModelClass;

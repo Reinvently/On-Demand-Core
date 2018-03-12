@@ -3,7 +3,11 @@
 
 use reinvently\ondemand\core\vendor\tasker\daemon\Tasker;
 
-include 'config.php';
+if (isset($argv[1]) && file_exists($argv[1])) {
+    include $argv[1];
+} else {
+    include 'config.php';
+}
 
 include './daemon/SingletonTrait.php';
 include './daemon/DbHelper.php';

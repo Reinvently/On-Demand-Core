@@ -38,6 +38,14 @@ class OrderProduct extends CoreModel implements ApiInterface
 {
     use ApiTransportTrait;
 
+    /**
+     * @return string
+     */
+    public static function tableName()
+    {
+        return 'order_product';
+    }
+
     public $productModelClass = Product::class;
     public $orderModelClass = Order::class;
 
@@ -103,17 +111,18 @@ class OrderProduct extends CoreModel implements ApiInterface
      */
     public function beforeValidate()
     {
-        if (!$this->product) {
-            throw new NotFoundHttpException('Product not found');
-        }
-        if (!$this->order) {
-            throw new NotFoundHttpException('Order not found');
-        }
+        if ($this->getScenario() != Model::SCENARIO_DEFAULT) {
+            if (!$this->product) {
+                throw new NotFoundHttpException('Product not found');
+            }
+            if (!$this->order) {
+                throw new NotFoundHttpException('Order not found');
+            }
 
-        $this->price = $this->product->getPrice();
+            $this->price = $this->product->getPrice();
+        }
 
         if (\Yii::$app->user->getIdentity()->roleId != Role::ADMIN and $this->order->userId != \Yii::$app->user->id) {
-            //todo не тот пользователь
             throw new AccessDenyHttpException();
         }
         return parent::beforeValidate();

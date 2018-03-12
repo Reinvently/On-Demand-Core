@@ -14,6 +14,7 @@ use reinvently\ondemand\core\modules\location\models\Point;
 use reinvently\ondemand\core\modules\location\models\Type;
 use yii\data\ActiveDataProvider;
 use yii\filters\VerbFilter;
+use yii\helpers\ArrayHelper;
 use yii\web\BadRequestHttpException;
 
 abstract class ApiPointController extends ApiController
@@ -50,7 +51,7 @@ abstract class ApiPointController extends ApiController
                 ]
             ],
         ];
-        return array_merge_recursive($verbs, parent::behaviors());
+        return ArrayHelper::merge($verbs, parent::behaviors());
     }
 
 }

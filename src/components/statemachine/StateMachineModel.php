@@ -24,10 +24,12 @@ use yii\db\StaleObjectException;
  * @property int $v
  * @method string getColumnName() @see StateMachine
  * @method setStateName($name) @see StateMachine
- * @method transition(string $name, array $params = null) @see StateMachine
+ * @method bool transition(string $name, array $params = null) @see StateMachine
  * @method getApiState() @see StateMachine
  * @method getStateMachineError() @see StateMachine
  * @method getApiStateList() @see StateMachine
+ * @method State getState() @see StateMachine
+ * @method State getStateByName(string $name) @see StateMachine
  *
  */
 abstract class StateMachineModel extends CoreModel implements StatsInterface, ApiInterface
@@ -36,12 +38,7 @@ abstract class StateMachineModel extends CoreModel implements StatsInterface, Ap
     /** @var Role */
     public $roleModelClass = Role::class;
 
-    abstract function getStateMachineParams();
-
-    public function init()
-    {
-        $this->v = 0;
-    }
+    abstract public function getStateMachineParams();
 
     public function behaviors()
     {
@@ -64,6 +61,14 @@ abstract class StateMachineModel extends CoreModel implements StatsInterface, Ap
             $this->$column = $this->defaultStateName;
         }
         return parent::beforeValidate();
+    }
+
+    public function beforeSave($insert)
+    {
+        if ($insert) {
+            $this->v = 0;
+        }
+        return parent::beforeSave($insert);
     }
 
     /**

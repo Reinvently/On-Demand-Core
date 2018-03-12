@@ -14,8 +14,15 @@
 namespace reinvently\ondemand\core\controllers\rest;
 
 
+use yii\base\Model;
 use yii\db\BaseActiveRecord;
 
+/**
+ * Trait RestModelTrait
+ * @package reinvently\ondemand\core\controllers\rest
+ *
+ * @mixin Model
+ */
 trait RestModelTrait
 {
     /**
@@ -25,6 +32,21 @@ trait RestModelTrait
     {
         /** @var BaseActiveRecord $this */
         return $this->find();
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function scenarios()
+    {
+        $scenarios = parent::scenarios();
+        if (!key_exists(ApiController::CREATE_SCENARIO, $scenarios)) {
+            $scenarios[ApiController::CREATE_SCENARIO] = $scenarios[self::SCENARIO_DEFAULT];
+        }
+        if (!key_exists(ApiController::UPDATE_SCENARIO, $scenarios)) {
+            $scenarios[ApiController::UPDATE_SCENARIO] = $scenarios[self::SCENARIO_DEFAULT];
+        }
+        return $scenarios;
     }
 
 }

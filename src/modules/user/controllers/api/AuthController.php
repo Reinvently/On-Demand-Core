@@ -7,7 +7,6 @@
 
 namespace reinvently\ondemand\core\modules\user\controllers\api;
 
-use reinvently\ondemand\core\controllers\rest\ApiController;
 use reinvently\ondemand\core\controllers\rest\ApiTameController;
 use reinvently\ondemand\core\exceptions\LogicException;
 use reinvently\ondemand\core\modules\role\models\Role;
@@ -15,10 +14,13 @@ use reinvently\ondemand\core\modules\user\models\Client;
 use Yii;
 use reinvently\ondemand\core\modules\user\models\AuthModel;
 use reinvently\ondemand\core\modules\user\models\User;
-use yii\web\Session;
+use yii\helpers\ArrayHelper;
 
 class AuthController extends ApiTameController
 {
+    /** @var Role */
+    public $roleModelClass = Role::class;
+
     protected function allowedRoutes()
     {
         return [
@@ -41,7 +43,7 @@ class AuthController extends ApiTameController
                 ]
             ],
         ];
-        return array_merge_recursive($verbs, parent::behaviors());
+        return ArrayHelper::merge($verbs, parent::behaviors());
     }
 
     public function actionLogin()
@@ -105,8 +107,9 @@ class AuthController extends ApiTameController
             }
         }
 
-        if ($client->user->roleId != Role::GUEST) {
-            return $this->getTransport()->responseMessage('You must use login & password to connect using this device');
+        $roleModelClass = $this->roleModelClass;
+        if ($client->user->roleId != $roleModelClass::GUEST) {
+            return $this->getTransport()->responseMessage('You must use login & password to connect using this client');
         }
 
         return $this->getTransport()->responseObject([
@@ -131,7 +134,8 @@ class AuthController extends ApiTameController
         /** @var User $user */
         $user = new $userClass;
         $user->setAttributes($post);
-        $user->roleId = Role::USER;
+        $roleModelClass = $this->roleModelClass;
+        $user->roleId = $roleModelClass::USER;
         if (!$user->save()) {
             return $user;
         }

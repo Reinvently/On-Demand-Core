@@ -11,6 +11,8 @@ namespace reinvently\ondemand\core\modules\payment\strategies\orderproduct\strat
 
 use reinvently\ondemand\core\modules\payment\strategies\orderproduct\strategies\braintree\models\Payment;
 use reinvently\ondemand\core\vendor\paymentbraintree\BraintreeContainer;
+use yii\filters\VerbFilter;
+use yii\helpers\ArrayHelper;
 
 class ApiPaymentController extends \reinvently\ondemand\core\modules\payment\controllers\ApiPaymentController
 {
@@ -29,21 +31,20 @@ class ApiPaymentController extends \reinvently\ondemand\core\modules\payment\con
     {
         $verbs = [
             'verbs' => [
-                'class' => \yii\filters\VerbFilter::className(),
+                'class' => VerbFilter::className(),
                 'actions' => [
                     'token' => ['GET'],
                     'pay' => ['POST'],
                 ]
             ],
         ];
-        //todo
-        return array_merge_recursive($verbs, parent::behaviors());
+        return ArrayHelper::merge($verbs, parent::behaviors());
     }
 
     public function actionToken()
     {
         $c = new BraintreeContainer();
-        $c->setUserId(\Yii::$app->user->id); //todo
+        $c->setUserId(\Yii::$app->user->id);
 
         $this->getPaymentModel()->makeToken($c);
 

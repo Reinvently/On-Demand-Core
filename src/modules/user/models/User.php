@@ -29,6 +29,8 @@ use yii\web\IdentityInterface;
  * @property int $createdAt
  * @property int $updatedAt
  *
+ * @property User identity
+ *
  * @method User getIdentity(bool $autoRenew)
  */
 class User extends CoreModel implements IdentityInterface, ApiInterface
@@ -75,7 +77,7 @@ class User extends CoreModel implements IdentityInterface, ApiInterface
             ->where(['token' => $token])
             ->andWhere(['>=', 'expiredAt', time()])
             ->one();
-        if ($client) {
+        if ($client && $client->user) {
             $client->user->currentClient = $client;
             return $client->user;
         }
@@ -163,22 +165,6 @@ class User extends CoreModel implements IdentityInterface, ApiInterface
         ];
     }
 
-    /*public function required($attribute, $params)
-    {
-        if (in_array($attribute, ['email', 'password'])) {
-
-        } else {
-            parent::required($attribute, $params);
-        }
-    }
-
-    public function myRequired($attribute, $params)
-    {
-        if (!$this->$attribute and $this->roleId != Role::GUEST) {
-            $this->addError($attribute, $attribute . ' cannot be blank.');
-        }
-    }*/
-
     public static function findByUsername($username)
     {
         return static::find()
@@ -196,9 +182,9 @@ class User extends CoreModel implements IdentityInterface, ApiInterface
     {
         if ($this->getIsNewRecord()) {
             $this->createdAt = time();
-            if ($this->password) {
-                $this->password = Yii::$app->getSecurity()->generatePasswordHash($this->password);
-            }
+        }
+        if (!empty($this->getDirtyAttributes(['password']))) {
+            $this->password = Yii::$app->getSecurity()->generatePasswordHash($this->password);
         }
         $this->updatedAt = time();
         return parent::beforeSave($insert);

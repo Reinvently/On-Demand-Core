@@ -31,6 +31,14 @@ class Client extends CoreModel implements ApiInterface
     use ApiTransportTrait;
 
     /**
+     * @return string
+     */
+    public static function tableName()
+    {
+        return 'client';
+    }
+
+    /**
      * @param $uuid
      * @param bool $userId
      * @return array|null|\yii\db\ActiveRecord

@@ -12,6 +12,7 @@ namespace reinvently\ondemand\core\modules\promocode\controllers;
 use reinvently\ondemand\core\controllers\rest\ApiController;
 use reinvently\ondemand\core\modules\promocode\models\PromoCode;
 use yii\filters\VerbFilter;
+use yii\helpers\ArrayHelper;
 use yii\web\NotFoundHttpException;
 
 abstract class ApiPromoCodeController extends ApiController
@@ -42,7 +43,7 @@ abstract class ApiPromoCodeController extends ApiController
                 ]
             ],
         ];
-        return array_merge_recursive($verbs, parent::behaviors());
+        return ArrayHelper::merge($verbs, parent::behaviors());
     }
 
 }

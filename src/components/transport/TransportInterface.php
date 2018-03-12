@@ -78,6 +78,12 @@ interface TransportInterface
     public function responseMessage($message, $success = false);
 
     /**
+     * @param bool $success
+     * @return mixed
+     */
+    public function responseSuccess($success = true);
+
+    /**
      * @param $exceptionData
      * @return mixed
      */

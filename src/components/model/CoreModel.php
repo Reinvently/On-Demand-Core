@@ -13,4 +13,22 @@ use yii\db\ActiveRecord;
 abstract class CoreModel extends ActiveRecord
 {
     use RestModelTrait;
+
+    public function afterValidate()
+    {
+        $schema = static::getTableSchema();
+
+        foreach ($this->attributes as $attribute => $value) {
+            if (!$this->hasErrors($attribute)) {
+                $typeCasted = $schema->getColumn($attribute)->phpTypecast($value);
+
+                if ($value !== $typeCasted) {
+                    $this->setAttribute($attribute, $typeCasted);
+                }
+            }
+        }
+
+        return parent::afterValidate();
+    }
+
 }

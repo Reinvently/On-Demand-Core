@@ -12,4 +12,15 @@ namespace reinvently\ondemand\core\controllers\rest;
 abstract class ApiTameController extends ApiController
 {
     public $modelClass = '';
+
+    protected function verbs()
+    {
+        return [];
+    }
+
+    public function actions()
+    {
+        return [];
+    }
+
 } 
