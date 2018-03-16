@@ -30,5 +30,13 @@
     "psr-4": {
       "reinvently\\ondemand\\core\\": "src"
     }
+  },
+  "merge-plugin": {
+    "include": [
+      "src/vendor/paymentbraintree/composer.json"
+    ],
+    "recurse": false,
+    "replace": false,
+    "merge-extra": false
   }
 }

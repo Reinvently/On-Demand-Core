@@ -1,6 +1,6 @@
 <?php
 /**
- * @copyright Reinvently (c) 2017
+ * @copyright Reinvently (c) 2018
  * @link http://reinvently.com/
  * @license https://opensource.org/licenses/Apache-2.0 Apache License 2.0
  */
@@ -11,268 +11,171 @@
  * Time: 15:20
  */
 
-namespace reinvently\ondemand\core\vendor\paymentbraintree;
+namespace app\helpers;
 
-use reinvently\ondemand\core\components\eventmanager\EventInterface;
-use reinvently\ondemand\core\components\payment\exceptions\PaymentException;
-use reinvently\ondemand\core\components\payment\Payment;
-use reinvently\ondemand\core\components\payment\PaymentInterface;
+use app\exceptions\PaymentDuplicateException;
+use Braintree\ClientToken;
+use Braintree\Configuration;
+use Braintree\CreditCard;
+use Braintree\Customer;
+use Braintree\Exception\NotFound;
+use Braintree\MerchantAccount;
+use Braintree\PaymentMethod;
+use Braintree\PayPalAccount;
+use Braintree\Transaction;
+use reinvently\ondemand\core\exceptions\UserException;
+use reinvently\ondemand\core\models\ExceptionLog;
 use reinvently\ondemand\core\modules\user\models\User;
-use reinvently\ondemand\core\vendor\paymentbraintree\exceptions\BraintreeException;
-use Braintree_Configuration as Braintree_Configuration;
-use Yii;
-use yii\base\Component;
 
-/**
- * Class Braintree
- * @package reinvently\ondemand\core\vendor\paymentbraintree
- */
-class Braintree extends Component implements EventInterface
+class Braintree
 {
+    const CACHE_TRANSACTION = 'BraintreeTransaction';
+    const CACHE_CUSTOMER_KEY = 'BraintreeCustomer';
+    const CACHE_TRANSACTIONS_CREDIT_CARD = 'TransactionsCreditCard';
 
-    public function setEnvironment($val)
+    const CACHE_TRANSACTION_DURATION = 3600;
+
+    const PAYMENT_METHOD_TYPE_PAY_PAL = 'PayPal';
+    const PAYMENT_METHOD_TYPE_CREDIT_CARD = 'CreditCard';
+
+    public $result;
+
+    public function __construct()
     {
-        Braintree_Configuration::environment($val);
+        $this->configuration();
     }
 
-    public function setMerchantId($val)
+    public function configuration()
     {
-        Braintree_Configuration::merchantId($val);
-    }
-
-    public function setPublicKey($val)
-    {
-        Braintree_Configuration::publicKey($val);
-    }
-
-    public function setPrivateKey($val)
-    {
-        Braintree_Configuration::privateKey($val);
+        $config = \Yii::$app->params['braintree'];
+        Configuration::environment($config['environment']);
+        Configuration::merchantId($config['merchantId']);
+        Configuration::publicKey($config['publicKey']);
+        Configuration::privateKey($config['privateKey']);
     }
 
     /**
-     * @return bool
+     * Get array of destination types for creating merchant account
+     * https://developers.braintreepayments.com/reference/request/merchant-account/create/php
+     *
+     * @return array
      */
-    public static function isProduction()
+    public static function getDestinations()
     {
-        return Yii::$app->params['braintree']['environment'] == 'production';
+        return [
+            MerchantAccount::FUNDING_DESTINATION_BANK => 'Bank',
+            MerchantAccount::FUNDING_DESTINATION_EMAIL => 'Email',
+            MerchantAccount::FUNDING_DESTINATION_MOBILE_PHONE => 'Phone',
+        ];
     }
 
     /**
      * @param $userId
-     * @return bool|mixed
+     * @return string
+     * @throws UserException
      */
-    public function getToken($userId)
+    public function generateToken($userId)
     {
-        return $this->generateToken($userId);
+        try {
+            $customer = Customer::find($userId);
+        } catch (NotFound $e) {
+            $customer = $this->registerCustomer(User::findOne($userId));
+            if (!$customer) {
+                throw new UserException('Can not register customer');
+            }
+        }
+        /** @var string $token */
+        $token = ClientToken::generate(array(
+            'customerId' => $customer->id,
+        ));
+        return $token;
     }
 
     /**
-     * @param BraintreeContainer $c
-     * @return bool
-     * @throws PaymentException
+     * @param User $user
+     * @return mixed|bool
      */
-    public function auth(BraintreeContainer $c)
+    protected function registerCustomer(User $user)
     {
-
-        $c->setScenario(Payment::RAISE_EVENT_AUTH);
-        if (!$c->validate()) {
+        try {
+            $result = Customer::create(array(
+                'id' => $user->id,
+                'firstName' => $user->firstName,
+                'lastName' => $user->lastName,
+                'email' => $user->email,
+                'phone' => $user->phone,
+            ));
+        } catch (\Exception $e) {
+            ExceptionLog::saveException($e);
             return false;
         }
 
-        $arr = [
-            'amount' => $c->getAmount(),
-//                'options' => [
-//                    'submitForSettlement' => true,
-//                ],
-            'orderId' => $c->getOrderId(),
-        ];
-
-        if (!empty($c->getNonce())) {
-            $arr['paymentMethodNonce'] = $c->getNonce();
-//            } elseif (!empty($paymentMethodToken)) {
-//                $arr['paymentMethodToken'] = $paymentMethodToken;
+        if ($result->success) {
+            return $result->customer;
         }
+        return false;
+    }
 
+    /**
+     * @param string|float $amount
+     * @param int $orderId
+     * @param string $paymentMethodToken
+     * @param string $nonce
+     * @param bool $submitForSettlement
+     * @param string $merchantAccountId
+     * @param float $serviceFeeAmount
+     * @return bool
+     * @throws UserException
+     */
+    public function sale($amount, $orderId, $paymentMethodToken = null, $nonce = null, $submitForSettlement = false, $merchantAccountId = null, $serviceFeeAmount = null)
+    {
         try {
-            /** @var \Braintree_Result_Error|\Braintree_Result_Successful $result */
+            /** @var \Braintree\Result\Error|\Braintree\Result\Successful $result */
 
-            $result = \Braintree_Transaction::sale($arr);
+            $arr = [
+                'amount' => $amount,
+                'options' => [
+                    'submitForSettlement' => $submitForSettlement,
+                ],
+                'orderId' => $orderId,
+            ];
+
+            if (!empty($nonce)) {
+                $arr['paymentMethodNonce'] = $nonce;
+            } elseif (!empty($paymentMethodToken)) {
+                $arr['paymentMethodToken'] = $paymentMethodToken;
+            } else {
+                throw new \InvalidArgumentException('Must be set nonce or paymentMethodToken');
+            }
+
+            if (!empty($merchantAccountId)) {
+                $arr['merchantAccountId'] = $merchantAccountId;
+            }
+
+            if ($serviceFeeAmount !== null) {
+                $arr['serviceFeeAmount'] = $serviceFeeAmount;
+                $arr['options']['holdInEscrow'] = true;
+            }
+
+            $result = Transaction::sale($arr);
+
+            $this->result = $result;
 
             if ($result->success) {
-                $c->setTransactionId($result->transaction->id);
-                Yii::$app->eventManager->call(Payment::EVENT_AUTH, $this);
+                return true;
             } else {
                 if ($result->transaction) {
                     $error = $result->message;
                 } else {
                     $error = $result->errors->deepAll()[0]->message;
                 }
-                $c->addError('transactionId', $error);;
-            }
-        } catch (\Braintree_Exception $e) {
-            Yii::warning(
-                'Braintree_Exception "' . get_class($e) . '" throwed. '
-                . 'Message: ' . $e->getMessage() . '; '
-                . 'Attributes: ' . var_export($c->getAttributes(), true));
-            $c->addError('transactionId', $e->getMessage());;
-        }
-
-        return true;
-    }
-
-    /**
-     * @param BraintreeContainer $c
-     * @return bool
-     * @throws PaymentException
-     */
-    public function cancelAuth(BraintreeContainer $c)
-    {
-        $c->setScenario(Payment::RAISE_EVENT_CANCEL_AUTH);
-        if (!$c->validate()) {
-            return false;
-        }
-
-        $result = \Braintree_Transaction::void($c->getTransactionId());
-        if ($result->success) {
-            //todo send params in event
-            Yii::$app->eventManager->call(Payment::EVENT_CANCEL_AUTH, $this);
-            return true;
-        }
-        throw new BraintreeException($result->errors);
-    }
-
-    /**
-     * @param BraintreeContainer $c
-     * @return bool
-     * @throws PaymentException
-     */
-    public function cancelSale(BraintreeContainer $c)
-    {
-        $c->setScenario(Payment::RAISE_EVENT_CANCEL_SALE);
-        if (!$c->validate()) {
-            return false;
-        }
-
-        try {
-            $transaction = $this->transaction($c->getTransactionId());
-            if (!$transaction) {
-                throw new BraintreeException('Transaction not found');
-            }
-            if (in_array($transaction->status, [\Braintree_Transaction::SETTLED, \Braintree_Transaction::SETTLING])) {
-                // Refund
-                /** @var \Braintree_Result_Error|\Braintree_Result_Successful $result */
-                $result = \Braintree_Transaction::refund($c->getTransactionId(), $c->getAmount());
-                if ($result->success) {
-                    $c->setTransactionId($result->transaction->id);
-                    //todo send params in event
-                    Yii::$app->eventManager->call(Payment::EVENT_CANCEL_SALE, $this);
-                    return true;
-                } else {
-                    if ($result->transaction) {
-                        $error = $result->message;
-                    } else {
-                        $error = $result->errors->deepAll()[0]->message;
-                    }
-                    throw new BraintreeException($error);
-                }
-            } else {
-                throw new BraintreeException('Unknown transaction status: ' . $transaction->status);
+                ExceptionLog::saveException(new \Exception($error . '<br>Request:<br>' . var_export($arr, true)));
+                throw new UserException($error);
             }
         } catch (\Exception $e) {
-            Yii::warning('Exception "' . get_class($e) . '" throwed. Message: ' . $e->getMessage());
-            throw new BraintreeException($e->getMessage(), 0, $e);
+            ExceptionLog::saveException($e);
+            throw new UserException($e->getMessage());
         }
-    }
-
-    /**
-     * @param BraintreeContainer $c
-     * @return bool
-     * @throws PaymentException
-     */
-    public function sale(BraintreeContainer $c)
-    {
-        $c->setScenario(Payment::RAISE_EVENT_SALE);
-        if (!$c->validate()) {
-            return false;
-        }
-
-        $result = \Braintree_Transaction::submitForSettlement($c->getTransactionId(), $c->getAmount());
-
-        if ($result->success) {
-            Yii::$app->eventManager->call(Payment::EVENT_SALE, $this);
-            return true;
-        }
-
-        if ($result->transaction) {
-            $error = $result->message;
-        } else {
-            $error = $result->errors->deepAll()[0]->message;
-        }
-        throw new BraintreeException($error);
-    }
-
-    /**
-     * @param $code
-     * @return \Braintree_Transaction
-     * @throws PaymentException
-     */
-    protected function transaction($code)
-    {
-        try {
-            $transaction = \Braintree_Transaction::find($code);
-            return $transaction;
-        } catch (\Braintree_Exception_NotFound $e) {
-            Yii::warning('Exception "' . get_class($e) . '" throwed. Message: ' . $e->getMessage());
-            throw new BraintreeException($e->getMessage(), 0, $e);
-        }
-    }
-
-    /**
-     * @param $userId
-     * @return bool|mixed
-     */
-    protected function generateToken($userId)
-    {
-        try {
-            $customer = \Braintree_Customer::find($userId);
-        } catch (\Braintree_Exception_NotFound $e) {
-            // Register new Customer
-            $customer = $this->_registerCustomer($userId);
-            if (!$customer) {
-                return false;
-            }
-        }
-        $res = \Braintree_ClientToken::generate(array(
-            'customerId' => $customer->id,
-        ));
-
-        return $res;
-    }
-
-    /**
-     * @param int $userId
-     * @return bool
-     */
-    private function _registerCustomer($userId)
-    {
-        //todo подписываться на событие user update и обновлять записть
-        //todo сделать под универсального пользователя
-
-        /** @var User $user */
-        $user = User::findOne($userId);
-
-        $result = \Braintree_Customer::create(array(
-            'id' => $user->id,
-            'firstName' => $user->firstName,
-            'lastName' => $user->lastName,
-            'email' => $user->email,
-            'phone' => $user->phone,
-        ));
-        if ($result->success) {
-            return $result->customer;
-        }
-        return false;
     }
 
     /**
@@ -283,7 +186,7 @@ class Braintree extends Component implements EventInterface
      */
     public function submitForSettlement($id, $amount)
     {
-        $result = \Braintree_Transaction::submitForSettlement($id, $amount);
+        $result = Transaction::submitForSettlement($id, $amount);
 
         if ($result->success) {
             return true;
@@ -298,12 +201,13 @@ class Braintree extends Component implements EventInterface
     }
 
     /**
-     * @param int $id
-     * @return mixed
+     * @param $id
+     * @return bool
+     * @throws UserException
      */
     public function void($id)
     {
-        $result = \Braintree_Transaction::void($id);
+        $result = Transaction::void($id);
         if ($result->success) {
             return true;
         }
@@ -311,85 +215,179 @@ class Braintree extends Component implements EventInterface
     }
 
     /**
-     * @param int $id
+     * @param int $transactionId
      * @param float|null $amount
-     * @return array
+     * @return boolean
+     * @throws \Exception
      */
-    public function refund($id, $amount = null)
+    public function refund($transactionId, $amount = null)
     {
         try {
-            $transaction = $this->transaction($id);
+            $transaction = $this->transactionFromBraintree($transactionId);
             if (!$transaction) {
-                return ['error' => 'Transaction not found'];
+                throw new UserException('Transaction not found');
             }
-            if ($transaction->status == \Braintree_Transaction::SUBMITTED_FOR_SETTLEMENT) {
-                // Void
-                $result = \Braintree_Transaction::void($id);
-                if ($result->success) {
-                    return [
-//                        'status' => Order::PAYMENT_STATUS_VOIDED,
-                        'message' => 'Transaction successfully voided',
-                    ];
-                } else {
-                    return $result->errors;
+            if ($transaction->status == Transaction::SUBMITTED_FOR_SETTLEMENT) {
+                $result = Transaction::void($transactionId);
+                if (!$result->success) {
+                    if ($result->message) {
+                        $error = $result->message;
+                    } else {
+                        $error = $result->errors->message;
+                    }
+                    throw new UserException($error);
                 }
-            } elseif (in_array($transaction->status, [\Braintree_Transaction::SETTLED, \Braintree_Transaction::SETTLING])) {
-                // Refund
-
-                /** @var \Braintree_Result_Error|\Braintree_Result_Successful $result */
-                $result = \Braintree_Transaction::refund($id, $amount);
+            } elseif (in_array($transaction->status, [Transaction::SETTLED, Transaction::SETTLING])) {
+                /** @var \Braintree\Result\Error|\Braintree\Result\Successful $result */
+                $result = Transaction::refund($transactionId, $amount);
                 if ($result->success) {
-                    return [
-//                        'status' => Order::PAYMENT_STATUS_REFUNDED,
-                        'message' => 'Transaction successfully refunded',
-                        'transactionId' => $result->transaction->id
-                    ];
+                    return true;
                 } else {
                     if ($result->transaction) {
                         $error = $result->message;
                     } else {
                         $error = $result->errors->deepAll()[0]->message;
                     }
-                    return ['error' => $error];
+                    throw new UserException($error);
                 }
             } else {
-                return ['error' => 'Unknown transaction status: ' . $transaction->status];
+                throw new UserException('Unknown transaction status: ' . $transaction->status);
             }
-
-
         } catch (\Exception $e) {
-            return ['error' => 'Exception "' . get_class($e) . '" throwed.'];
+            ExceptionLog::saveException($e);
+            throw $e;
         }
+        return false;
+    }
+
+    /**
+     * @param $transactionId
+     * @return Transaction
+     */
+    public function transactionFromBraintree($transactionId)
+    {
+        if (empty($transactionId)) {
+            return null;
+        }
+        try {
+            $transaction = Transaction::find($transactionId);
+            \Yii::$app->cache->set(
+                self::CACHE_TRANSACTION . $transactionId,
+                serialize($transaction),
+                self::CACHE_TRANSACTION_DURATION
+            );
+            return $transaction;
+        } catch (NotFound $e) {
+            \Yii::$app->cache->set(
+                self::CACHE_TRANSACTION . $transactionId,
+                serialize(null),
+                self::CACHE_TRANSACTION_DURATION
+            );
+            return null;
+        } catch (\Exception $e) {
+            ExceptionLog::saveException($e);
+            return null;
+        }
+
+    }
+
+    /**
+     * @param Transaction $transaction
+     * @return \Braintree\Result\Error|\Braintree\Result\Successful
+     */
+    public function releaseFromEscrow($transaction)
+    {
+        if (!$transaction || !$transaction->id) {
+            return null;
+        }
+
+        if ($transaction->escrowStatus != Transaction::ESCROW_HELD) {
+            return null;
+        }
+
+        return Transaction::releaseFromEscrow($transaction->id);
+    }
+
+    /**
+     * @param string $transactionId
+     * @return CreditCard
+     */
+    public function getCreditCardDetailsByTransactionId($transactionId)
+    {
+        $creditCardDetails = \Yii::$app->cache->get(self::CACHE_TRANSACTIONS_CREDIT_CARD . $transactionId);
+        if ($creditCardDetails) {
+            return $creditCardDetails;
+        }
+
+        $transaction = $this->transaction($transactionId);
+        if ($transaction) {
+            /** @var CreditCard $creditCardDetails */
+            $creditCardDetails = $transaction->creditCardDetails;
+            \Yii::$app->cache->set(self::CACHE_TRANSACTIONS_CREDIT_CARD . $transactionId, $creditCardDetails);
+            return $creditCardDetails;
+        }
+
+        return null;
+    }
+
+    /**
+     * @param $transactionId
+     * @return Transaction
+     */
+    public function transaction($transactionId)
+    {
+        $transaction = \Yii::$app->cache->get(self::CACHE_TRANSACTION . $transactionId);
+        if ($transaction) {
+            return unserialize($transaction);
+        }
+
+        return $this->transactionFromBraintree($transactionId);
+    }
+
+    /**
+     * @param $id
+     * @return bool
+     */
+    public function deleteCustomer($id)
+    {
+        $customer = $this->getCustomer($id);
+        if ($customer) {
+            Customer::delete($id);
+            $this->clearCustomerCache($id, false);
+            return true;
+        }
+        return false;
     }
 
     /**
      * @param $id
      * @param bool $registerNew
-     * @return bool|\Braintree_Customer
+     * @return bool|Customer
      */
     public function getCustomer($id, $registerNew = false)
     {
-
-        $customer = Yii::$app->cache->get(self::CACHE_CUSTOMER_KEY . $id);
+        $customer = \Yii::$app->cache->get(self::CACHE_CUSTOMER_KEY . $id);
         if ($customer) {
             return $customer;
         }
 
         try {
-            $customer = \Braintree_Customer::find($id);
-        } catch (\Braintree_Exception_NotFound $e) {
+            $customer = Customer::find($id);
+        } catch (NotFound $e) {
             if ($registerNew) {
-                // Register new Customer
-                $customer = $this->_registerCustomer(User::findOne($id));
+                $customer = $this->registerCustomer(User::findOne($id));
             } else {
                 return false;
             }
+        } catch (\Exception $e) {
+            ExceptionLog::saveException($e);
+            return false;
         }
         if (!$customer) {
             return false;
         }
 
-        Yii::$app->cache->set(self::CACHE_CUSTOMER_KEY . $id, $customer);
+        \Yii::$app->cache->set(self::CACHE_CUSTOMER_KEY . $id, $customer);
         return $customer;
     }
 
@@ -400,7 +398,7 @@ class Braintree extends Component implements EventInterface
      */
     public function clearCustomerCache($id, $reset = true)
     {
-        $res = Yii::$app->cache->delete(self::CACHE_CUSTOMER_KEY . $id);
+        $res = \Yii::$app->cache->delete(self::CACHE_CUSTOMER_KEY . $id);
 
         if ($reset) {
             $this->getCustomer($id, true);
@@ -409,203 +407,289 @@ class Braintree extends Component implements EventInterface
         return $res;
     }
 
-    public function deleteCustomer($id)
+    /**
+     * @param $id
+     * @param $attrs
+     * @return object
+     */
+    public function updateCustomer($id, $attrs)
     {
-        $customer = $this->getCustomer($id);
-        if ($customer) {
-            \Braintree_Customer::delete($id);
-            $this->clearCustomerCache($id, false);
-            return true;
-        }
-        return false;
+        $res = Customer::update($id, $attrs);
+        $this->clearCustomerCache($id);
+
+        return $res;
     }
 
-    public function addPayment($userId, $paymentMethodNonce, $isDefault = false)
+    /**
+     * @param $userId
+     * @param $paymentMethodNonce
+     * @param bool $isDefault
+     * @return bool
+     * @throws PaymentDuplicateException
+     * @throws UserException
+     */
+    public function addPaymentMethod($userId, $paymentMethodNonce, $isDefault = false)
     {
         $customer = $this->getCustomer($userId);
         if (!$customer) {
-            // Register new Customer
-            $customer = $this->_registerCustomer(User::findOne($userId));
+            $customer = $this->registerCustomer(User::findOne($userId));
             if (!$customer) {
-                return [
-                    'success' => false,
-                    'errors' => 'Cannot register customer',
-                ];
+                throw new UserException('Can not register customer');
             }
         }
 
-        $options = [
-            'failOnDuplicatePaymentMethod' => true,
-        ];
-        if ($isDefault) {
-            $options['makeDefault'] = true;
-        }
+        $options = ['verifyCard' => true, 'makeDefault' => $isDefault];
 
-//        var_export([
-//            'customerId' => $customer->id,
-//            'paymentMethodNonce' => $paymentMethodNonce,
-//            'options' => $options
-//        ]);
-        $result = \Braintree_PaymentMethod::create(array(
+        $result = PaymentMethod::create(array(
             'customerId' => $customer->id,
             'paymentMethodNonce' => $paymentMethodNonce,
             'options' => $options
         ));
-//        var_export($result);
 
-        if ($result->success) {
-            $this->clearCustomerCache($userId);
-            return [
-                'success' => true,
-                'paymentMethod' => $this->getJson($result->paymentMethod),
-            ];
 
-        } else {
-            $errors = '';
-            foreach ($result->errors->deepAll() as $error) {
-                $errors .= $error->message . ' ';
-            }
-            return [
-                'success' => false,
-                'errors' => $errors,
-            ];
-        }
-
-    }
-
-    public function updatePayment($token, $isDefault, $userId)
-    {
-        $options = [];
-
-        if ($isDefault) {
-            $options['makeDefault'] = true;
-        }
-
-        try {
-            $result = \Braintree_PaymentMethod::update($token, ['options' => $options]);
-            if ($result->success) {
-                $this->clearCustomerCache($userId);
-                return [
-                    'success' => true,
-//                    'paymentMethod' => $this->getJson($result->paymentMethod),
-                ];
-
+        if (!$result->success) {
+            if ($result->message) {
+                $error = $result->message;
             } else {
-                $errors = '';
-                foreach ($result->errors->deepAll() as $error) {
-                    $errors .= $error->message . ' ';
-                }
-                return [
-                    'success' => false,
-                    'errors' => $errors,
-                ];
+                $error = $result->errors->message;
             }
-        } catch (\Braintree_Exception_NotFound $e) {
-            return [
-                'success' => false,
-                'errors' => 'Token not found',
-            ];
+            throw new UserException($error);
         }
+
+        $sameCards = $this->getCustomerSamePayment($result->paymentMethod, $customer);
+
+        if (count($sameCards) > 1) {
+            $this->deletePaymentMethod($result->paymentMethod->token, $customer->id);
+            throw new PaymentDuplicateException;
+        }
+
+        $this->clearCustomerCache($userId);
+
+        return true;
     }
 
+    /**
+     * @param CreditCard $paymentMethod
+     * @param Customer $customer
+     * @return bool | CreditCard[]
+     */
+    protected function getCustomerSamePayment($paymentMethod, Customer $customer)
+    {
+        if (!($paymentMethod instanceof CreditCard)) {
+            return false;
+        }
 
-    public function deletePayment($token, $userId)
+        $sameCard = function (CreditCard $card) use ($paymentMethod) {
+            return ($card->uniqueNumberIdentifier == $paymentMethod->uniqueNumberIdentifier);
+        };
+
+        /** @var Customer $customerInfo */
+        $customerInfo = $this->getCustomer($customer->id);
+        if (!$customerInfo && !isset($customerInfo->creditCards) or !$customerInfo->creditCards) {
+            return false;
+        }
+
+        return array_filter($customerInfo->creditCards, $sameCard);
+    }
+
+    /**
+     * @param $token
+     * @param $userId
+     * @return bool
+     * @throws UserException
+     */
+    public function deletePaymentMethod($token, $userId)
     {
         try {
-            $result = \Braintree_PaymentMethod::delete($token);
-            $this->clearCustomerCache($userId);
-            return [
-                'success' => $result,
-            ];
-        } catch (\Braintree_Exception_NotFound $e) {
-            return [
-                'success' => false,
-                'errors' => 'Token not found',
-            ];
+            $result = PaymentMethod::delete($token);
+        } catch (NotFound $e) {
+            throw new UserException('Token not found');
         }
+        if (!$result->success) {
+            if ($result->message) {
+                $error = $result->message;
+            } else {
+                $error = $result->errors->message;
+            }
+            throw new UserException($error);
+        }
+
+        $this->clearCustomerCache($userId);
+        return true;
+
     }
 
-
-    public function getCardJson($c)
+    /**
+     * @param $token
+     * @param $userId
+     * @param string $nonce
+     * @param bool $isDefault
+     * @return bool
+     * @throws PaymentDuplicateException
+     * @throws UserException
+     */
+    public function updatePaymentMethod($token, $userId, $nonce = '', $isDefault = false)
     {
-        /** @var \Braintree_CreditCard $c */
+        $customer = $this->getCustomer($userId);
+
+        $data = [
+            'options' => [
+                'verifyCard' => true,
+                'makeDefault' => $isDefault,
+            ]
+        ];
+
+        if (!empty($nonce)) {
+            $data['paymentMethodNonce'] = $nonce;
+        }
+
+        try {
+            $result = PaymentMethod::update($token, $data);
+        } catch (NotFound $e) {
+            throw new UserException('Token not found');
+        }
+
+        if (!$result->success) {
+            if ($result->message) {
+                $error = $result->message;
+            } else {
+                $error = $result->errors->message;
+            }
+            throw new UserException($error);
+        }
+
+        $sameCards = $this->getCustomerSamePayment($result->paymentMethod, $customer);
+
+        if (count($sameCards) > 1) {
+            $card = array_pop($sameCards);
+
+            if ($card->isDefault()) {
+                try {
+                    PaymentMethod::update($result->paymentMethod->token, [
+                        'options' => [
+                            'verifyCard' => true,
+                            'makeDefault' => $isDefault,
+                        ]
+                    ]);
+                } catch (NotFound $e) {
+                    throw new UserException('Token not found');
+                }
+            };
+
+            $this->deletePaymentMethod($card->token, $customer->id);
+
+            throw new PaymentDuplicateException();
+        }
+
+        $this->clearCustomerCache($userId);
+        return true;
+    }
+
+    /**
+     * @param integer $userId
+     * @return array
+     */
+    public function getPaymentMethods($userId)
+    {
+        $customer = $this->getCustomer($userId, true);
+        $paymentMethodList = [];
+        if ($customer) {
+            if ($customer->creditCards) {
+                foreach ($customer->creditCards as $c) {
+                    $paymentMethodList[] = $this->getCardJson($c);
+                }
+            }
+            if ($customer->paypalAccounts) {
+                foreach ($customer->paypalAccounts as $c) {
+                    $paymentMethodList[] = $this->getPaypalJson($c);
+                }
+            }
+        }
+        return $paymentMethodList;
+    }
+
+    /**
+     * @param integer $userId
+     * @param string $paymentToken
+     * @return array
+     */
+    public function getPaymentMethodByUserIdPaymentToken($userId, $paymentToken)
+    {
+        $paymentMethodList = $this->getPaymentMethods($userId);
+        foreach ($paymentMethodList as $paymentMethod) {
+            if ($paymentMethod['paymentToken'] === $paymentToken) {
+                return $paymentMethod;
+            }
+        }
+        return [];
+    }
+
+    /**
+     * @param CreditCard $c
+     * @return array
+     */
+    protected function getCardJson($c)
+    {
         return [
-            'isDefault' => $c->default,
+            'isDefault' => $c->isDefault(),
             'paymentToken' => $c->token,
             'paymentMethodInfo' => [
+                'type' => self::PAYMENT_METHOD_TYPE_CREDIT_CARD,
                 'paymentTypeName' => $c->cardType,
                 'last4' => $c->last4,
-                'type' => self::PAYMENT_METHOD_TYPE_CREDIT_CARD,
                 'imageUrl' => $c->imageUrl,
+                'expirationDate' => $c->expirationDate,
             ]
         ];
     }
 
-    public function getPaypalJson($c)
+    /**
+     * @param PayPalAccount $c
+     * @return array
+     */
+    protected function getPaypalJson($c)
     {
-        /** @var \Braintree_PayPalAccount $c */
         return [
-            'isDefault' => $c->default,
+            'isDefault' => $c->isDefault(),
             'paymentToken' => $c->token,
             'paymentMethodInfo' => [
+                'type' => self::PAYMENT_METHOD_TYPE_PAY_PAL,
                 'paymentTypeName' => 'PayPal',
                 'email' => $c->email,
-                'type' => self::PAYMENT_METHOD_TYPE_PAY_PAL,
                 'imageUrl' => $c->imageUrl,
             ]
         ];
     }
 
-    public function getJson($paymentMethod)
+    /**
+     * @param $params array
+     * @return \Braintree\Result\Error|\Braintree\Result\Successful
+     */
+    public function createMerchantAccount($params)
+    {
+        // Braintree Documentation:
+        // https://developers.braintreepayments.com/guides/marketplace/onboarding/php
+        // https://developers.braintreepayments.com/reference/request/merchant-account/create/php
+        $response = MerchantAccount::create($params);
+        return $response;
+    }
+
+    public function findMerchantAccount($accountId)
+    {
+        return MerchantAccount::find($accountId);
+    }
+
+    protected function getJson($paymentMethod)
     {
         $res = false;
 
-        if ($paymentMethod instanceof \Braintree_CreditCard) {
+        if ($paymentMethod instanceof CreditCard) {
             $res = $this->getCardJson($paymentMethod);
-            $res['type'] = self::PAYMENT_METHOD_TYPE_CREDIT_CARD;
-        } elseif ($paymentMethod instanceof \Braintree_PayPalAccount) {
+        } elseif ($paymentMethod instanceof PayPalAccount) {
             $res = $this->getPayPalJson($paymentMethod);
-            $res['type'] = self::PAYMENT_METHOD_TYPE_PAY_PAL;
         }
 
         return $res;
     }
 
-
-    public function findTransaction($transactionId)
-    {
-        try {
-            return \Braintree_Transaction::find($transactionId);
-        } catch (\Braintree_Exception_NotFound $ex) {
-            return false;
-        }
-    }
-
-    /**
-     * @return void|array Events list for ex. [Test2::RAISE_EVENT_TEST2];
-     */
-    public static function requiredTriggeredEvent()
-    {
-    }
-
-    /**
-     * @return void|array Events list for ex. [Test2::RAISE_EVENT_TEST2];
-     */
-    public static function optionalTriggeredEvent()
-    {
-    }
-
-    /**
-     * @return void|array Events list for ex. [Test2::RAISE_EVENT_TEST2];
-     */
-    public static function requiredOnEvent()
-    {
-    }
-
-    /**
-     * @return void|array Events list for ex. [Test2::RAISE_EVENT_TEST2];
-     */
-    public static function optionalOnEvent()
-    {
-    }
 }
