@@ -24,7 +24,7 @@ class AdminAuthController extends AdminController
     {
         return [
             'access' => [
-                'class' => AccessControl::className(),
+                'class' => AccessControl::class,
                 'only' => ['index', 'login', 'logout'],
                 'rules' => [
                     [

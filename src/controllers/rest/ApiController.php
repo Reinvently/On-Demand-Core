@@ -50,7 +50,7 @@ abstract class ApiController extends ActiveController
     {
         return [
             'authenticator' => [
-                'class' => HttpBearerAuth::className(),
+                'class' => HttpBearerAuth::class,
                 'except' => $this->allowedRoutes(),
             ],
         ];

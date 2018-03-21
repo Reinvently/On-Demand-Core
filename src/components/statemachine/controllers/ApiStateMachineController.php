@@ -24,7 +24,7 @@ abstract class ApiStateMachineController extends ApiController
     {
         $verbs = [
             'verbs' => [
-                'class' => \yii\filters\VerbFilter::className(),
+                'class' => \yii\filters\VerbFilter::class,
                 'actions' => [
                     'state' => ['get', 'post'],
                     'state-list' => ['get'],

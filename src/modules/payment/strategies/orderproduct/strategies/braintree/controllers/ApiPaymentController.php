@@ -31,7 +31,7 @@ class ApiPaymentController extends \reinvently\ondemand\core\modules\payment\con
     {
         $verbs = [
             'verbs' => [
-                'class' => VerbFilter::className(),
+                'class' => VerbFilter::class,
                 'actions' => [
                     'token' => ['GET'],
                     'pay' => ['POST'],

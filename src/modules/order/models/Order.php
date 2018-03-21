@@ -105,7 +105,7 @@ abstract class Order extends StateMachineModel
     {
         /** @var BaseActiveRecord $class */
         $class = $this->orderProductModelClass;
-        return $this->hasMany($class::className(), ['orderId' => 'id']);
+        return $this->hasMany($class::class, ['orderId' => 'id']);
     }
 
     /**
@@ -115,7 +115,7 @@ abstract class Order extends StateMachineModel
     {
         /** @var BaseActiveRecord $class */
         $class = \Yii::$app->user->identityClass;
-        return $this->hasOne($class::className(), ['id' => 'userId']);
+        return $this->hasOne($class::class, ['id' => 'userId']);
     }
 
     /**
@@ -124,7 +124,7 @@ abstract class Order extends StateMachineModel
     public function getAddress()
     {
         /** @var BaseActiveRecord $class */
-        return $this->hasOne(Address::className(), ['id' => 'addressId']);
+        return $this->hasOne(Address::class, ['id' => 'addressId']);
     }
 
     /**

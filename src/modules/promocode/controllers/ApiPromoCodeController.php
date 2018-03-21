@@ -37,7 +37,7 @@ abstract class ApiPromoCodeController extends ApiController
     {
         $verbs = [
             'verbs' => [
-                'class' => VerbFilter::className(),
+                'class' => VerbFilter::class,
                 'actions' => [
                     'get-price-after-promo' => ['get'],
                 ]

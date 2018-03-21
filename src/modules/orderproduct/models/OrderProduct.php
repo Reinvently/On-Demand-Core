@@ -91,7 +91,7 @@ class OrderProduct extends CoreModel implements ApiInterface
     {
         /** @var BaseActiveRecord $class */
         $class = $this->productModelClass;
-        return $this->hasOne($class::className(), ['id' => 'productId']);
+        return $this->hasOne($class::class, ['id' => 'productId']);
     }
 
     /**
@@ -101,7 +101,7 @@ class OrderProduct extends CoreModel implements ApiInterface
     {
         /** @var BaseActiveRecord $class */
         $class = $this->orderModelClass;
-        return $this->hasOne($class::className(), ['id' => 'orderId']);
+        return $this->hasOne($class::class, ['id' => 'orderId']);
     }
 
     /**

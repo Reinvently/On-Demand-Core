@@ -39,7 +39,7 @@ class Payment extends \reinvently\ondemand\core\modules\payment\models\Payment
     {
         /** @var BaseActiveRecord $class */
         $class = $this->orderModelClass;
-        return $this->hasOne($class::className(), ['id' => 'orderId']);
+        return $this->hasOne($class::class, ['id' => 'orderId']);
     }
 
     /**

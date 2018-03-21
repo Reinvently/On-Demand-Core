@@ -45,7 +45,7 @@ abstract class ApiPointController extends ApiController
     {
         $verbs = [
             'verbs' => [
-                'class' => VerbFilter::className(),
+                'class' => VerbFilter::class,
                 'actions' => [
                     'search-by-circle' => ['get'],
                 ]

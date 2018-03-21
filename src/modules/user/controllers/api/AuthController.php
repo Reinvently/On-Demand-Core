@@ -34,7 +34,7 @@ class AuthController extends ApiTameController
     {
         $verbs = [
             'verbs' => [
-                'class' => \yii\filters\VerbFilter::className(),
+                'class' => \yii\filters\VerbFilter::class,
                 'actions' => [
                     'login' => ['post'],
                     'guest' => ['post'],

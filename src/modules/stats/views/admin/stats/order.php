@@ -22,11 +22,11 @@ $this->params['breadcrumbs'][] = $this->title;
             ]) ?>
 
             <?= $form->field($formModel, 'userId')->dropDownList($users) ?>
-            <?= $form->field($formModel, 'dateStart')->widget(\yii\jui\DatePicker::classname(), [
+            <?= $form->field($formModel, 'dateStart')->widget(\yii\jui\DatePicker::class, [
                 //'language' => 'ru',
                 'dateFormat' => 'yyyy-MM-dd',
             ]); ?>
-            <?= $form->field($formModel, 'dateFinish')->widget(\yii\jui\DatePicker::classname(), [
+            <?= $form->field($formModel, 'dateFinish')->widget(\yii\jui\DatePicker::class, [
                 //'language' => 'ru',
                 'dateFormat' => 'yyyy-MM-dd',
             ]); ?>

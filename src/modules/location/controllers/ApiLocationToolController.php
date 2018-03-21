@@ -67,7 +67,7 @@ class ApiLocationToolController extends ApiTameController
     {
         $verbs = [
             'verbs' => [
-                'class' => VerbFilter::className(),
+                'class' => VerbFilter::class,
                 'actions' => [
                     'distance-by-points' => ['get'],
                 ]

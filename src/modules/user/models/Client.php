@@ -93,7 +93,7 @@ class Client extends CoreModel implements ApiInterface
     {
         /** @var BaseActiveRecord $class */
         $class = Yii::$app->user->identityClass;
-        return $this->hasOne($class::className(), ['id' => 'userId']);
+        return $this->hasOne($class::class, ['id' => 'userId']);
     }
 
     /** ---------------------- */

@@ -133,7 +133,7 @@ class PromoCode extends CoreModel implements ApiInterface
     {
         /** @var User $class */
         $class = $this->userModelClass;
-        return $this->hasOne($class::className(), ['id' => 'userId']);
+        return $this->hasOne($class::class, ['id' => 'userId']);
     }
 
     /**

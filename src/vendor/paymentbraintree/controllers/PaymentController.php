@@ -29,7 +29,7 @@ class PaymentController extends ApiTameController
     {
         $verbs = [
             'verbs' => [
-                'class' => VerbFilter::className(),
+                'class' => VerbFilter::class,
                 'actions' => [
                     'token' => ['get'],
                     'add' => ['post'],

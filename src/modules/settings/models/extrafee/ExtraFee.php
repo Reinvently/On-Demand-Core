@@ -83,7 +83,7 @@ class ExtraFee extends CoreModel implements ApiInterface
      */
     public function getExtraFeeTime()
     {
-        return $this->hasOne(ExtraFeeTime::className(), ['extraFeeId' => 'id']);
+        return $this->hasOne(ExtraFeeTime::class, ['extraFeeId' => 'id']);
     }
 
     /**
@@ -91,7 +91,7 @@ class ExtraFee extends CoreModel implements ApiInterface
      */
     public function getExtraFeeYear()
     {
-        return $this->hasMany(ExtraFeeYear::className(), ['extraFeeId' => 'id']);
+        return $this->hasMany(ExtraFeeYear::class, ['extraFeeId' => 'id']);
     }
 
     /**
@@ -99,7 +99,7 @@ class ExtraFee extends CoreModel implements ApiInterface
      */
     public function getExtraFeeMonth()
     {
-        return $this->hasMany(ExtraFeeMonth::className(), ['extraFeeId' => 'id']);
+        return $this->hasMany(ExtraFeeMonth::class, ['extraFeeId' => 'id']);
     }
 
     /**
@@ -107,7 +107,7 @@ class ExtraFee extends CoreModel implements ApiInterface
      */
     public function getExtraFeeWeekday()
     {
-        return $this->hasMany(ExtraFeeWeekday::className(), ['extraFeeId' => 'id']);
+        return $this->hasMany(ExtraFeeWeekday::class, ['extraFeeId' => 'id']);
     }
 
     /**
@@ -115,7 +115,7 @@ class ExtraFee extends CoreModel implements ApiInterface
      */
     public function getExtraFeeDay()
     {
-        return $this->hasMany(ExtraFeeDay::className(), ['extraFeeId' => 'id']);
+        return $this->hasMany(ExtraFeeDay::class, ['extraFeeId' => 'id']);
     }
 
     /**
@@ -123,7 +123,7 @@ class ExtraFee extends CoreModel implements ApiInterface
      */
     public function getTariff()
     {
-        return $this->hasOne(Tariff::className(), ['id' => 'tariffId']);
+        return $this->hasOne(Tariff::class, ['id' => 'tariffId']);
     }
 
     /**
