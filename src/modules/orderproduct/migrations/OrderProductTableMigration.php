@@ -23,6 +23,13 @@ class OrderProductTableMigration extends Migration
             'count' => $this->integer() . ' UNSIGNED',
         ], 'ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci');
 
+        $this->addColumn('order_product', 'title', $this->string());
+        $this->addColumn('order_product', 'description', $this->text());
+        $this->addColumn('order_product', 'categoryId', $this->integer()->unsigned());
+        $this->addColumn('order_product', 'shortDescription', $this->string());
+        $this->addColumn('order_product', 'isOneTimePay', $this->boolean());
+
+
         $this->createIndex('orderId_productId', 'order_product', ['orderId', 'productId'], true);
     }
 

@@ -11,7 +11,7 @@
  * Time: 15:20
  */
 
-namespace app\helpers;
+namespace reinvently\ondemand\core\vendor\paymentbraintree;
 
 use app\exceptions\PaymentDuplicateException;
 use Braintree\ClientToken;

@@ -23,7 +23,8 @@ use reinvently\ondemand\core\components\transport\ApiTransportTrait;
  * @property int price
  * @property string title
  * @property string description
- * @property string image
+ * @property string $shortDescription
+ * @property boolean $isOneTimePay
  *
  */
 class Product extends CoreModel implements ApiInterface
@@ -47,6 +48,9 @@ class Product extends CoreModel implements ApiInterface
             [['title'], 'required'],
             [['price', 'categoryId'], 'integer'],
             [['categoryId', 'sort', 'description', 'image', 'price'], 'safe'],
+            [['isOneTimePay'], 'boolean'],
+            [['title'], 'string', 'max' => 255],
+            [['shortDescription', 'description'], 'string', 'max' => 0xFFFF],
         ];
     }
 
@@ -68,9 +72,10 @@ class Product extends CoreModel implements ApiInterface
             'categoryId' => $this->categoryId,
             'sort' => $this->sort,
             'title' => $this->title,
+            'shortDescription' => $this->shortDescription,
             'description' => $this->description,
-            'image' => $this->image,
             'price' => $this->price,
+            'isOneTimePay' => $this->isOneTimePay,
         ];
     }
 
@@ -79,13 +84,7 @@ class Product extends CoreModel implements ApiInterface
      */
     public function getItemShortForApi()
     {
-        return [
-            'id' => $this->id,
-            'sort' => $this->sort,
-            'title' => $this->title,
-            'image' => $this->image,
-            'price' => $this->price,
-        ];
+        return $this->getItemForApi();
     }
 
 }

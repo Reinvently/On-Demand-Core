@@ -40,7 +40,7 @@ abstract class Order extends StateMachineModel
 
     public $orderProductModelClass = OrderProduct::class;
 
-    /* todo example of state machine
+    /** example of state machine
     public function getStateMachineParams()
     {
         return [
@@ -105,7 +105,7 @@ abstract class Order extends StateMachineModel
     {
         /** @var BaseActiveRecord $class */
         $class = $this->orderProductModelClass;
-        return $this->hasMany($class::class, ['orderId' => 'id']);
+        return $this->hasMany($class::className(), ['orderId' => 'id']);
     }
 
     /**
@@ -115,7 +115,7 @@ abstract class Order extends StateMachineModel
     {
         /** @var BaseActiveRecord $class */
         $class = \Yii::$app->user->identityClass;
-        return $this->hasOne($class::class, ['id' => 'userId']);
+        return $this->hasOne($class::className(), ['id' => 'userId']);
     }
 
     /**
