@@ -24,7 +24,7 @@ use Braintree\PaymentMethod;
 use Braintree\PayPalAccount;
 use Braintree\Transaction;
 use reinvently\ondemand\core\exceptions\UserException;
-use reinvently\ondemand\core\models\ExceptionLog;
+use reinvently\ondemand\core\components\loggers\models\ExceptionLog;
 use reinvently\ondemand\core\modules\user\models\User;
 
 class Braintree

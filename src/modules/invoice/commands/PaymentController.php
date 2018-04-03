@@ -15,7 +15,7 @@ namespace reinvently\ondemand\core\modules\invoice\commands;
 
 
 use reinvently\ondemand\core\exceptions\LogicException;
-use reinvently\ondemand\core\models\ExceptionLog;
+use reinvently\ondemand\core\components\loggers\models\ExceptionLog;
 use reinvently\ondemand\core\modules\invoice\models\Invoice;
 use reinvently\ondemand\core\modules\invoice\models\OrderPaymentMethod;
 use reinvently\ondemand\core\modules\invoice\models\Transaction;

@@ -17,7 +17,7 @@ use reinvently\ondemand\core\components\model\CoreModel;
 use reinvently\ondemand\core\components\transport\ApiInterface;
 use reinvently\ondemand\core\components\transport\ApiTransportTrait;
 use reinvently\ondemand\core\exceptions\LogicException;
-use reinvently\ondemand\core\models\ExceptionLog;
+use reinvently\ondemand\core\components\loggers\models\ExceptionLog;
 use reinvently\ondemand\core\modules\invoice\controllers\PaymentController;
 use reinvently\ondemand\core\modules\order\models\Order;
 use reinvently\ondemand\core\modules\orderproduct\models\OrderProduct;

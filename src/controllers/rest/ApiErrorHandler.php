@@ -9,6 +9,7 @@
 namespace reinvently\ondemand\core\controllers\rest;
 
 
+use reinvently\ondemand\core\components\loggers\models\ExceptionLog;
 use reinvently\ondemand\core\components\statemachine\exceptions\InvalidStateException;
 use reinvently\ondemand\core\components\statemachine\exceptions\StateTransitionException;
 use reinvently\ondemand\core\exceptions\LogicException;
@@ -29,6 +30,8 @@ class ApiErrorHandler extends ErrorHandler
         if ($exception instanceof UserException) {
             return Yii::$app->transport->responseMessage($exception->getMessage());
         }
+
+        ExceptionLog::saveException($exception, true);
 
         return Yii::$app->transport->responseException(
             parent::convertExceptionToArray($exception)

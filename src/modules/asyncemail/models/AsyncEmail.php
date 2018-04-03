@@ -17,7 +17,7 @@ namespace reinvently\ondemand\core\modules\asyncemail\models;
 
 
 use reinvently\ondemand\core\components\model\CoreModel;
-use reinvently\ondemand\core\models\ExceptionLog;
+use reinvently\ondemand\core\components\loggers\models\ExceptionLog;
 use reinvently\ondemand\core\modules\asyncemail\commands\EmailController;
 use reinvently\ondemand\core\modules\asyncemail\helpers\Mailer;
 use yii\helpers\Json;

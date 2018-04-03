@@ -16,7 +16,7 @@
 namespace reinvently\ondemand\core\modules\asyncemail\helpers;
 
 
-use reinvently\ondemand\core\models\ExceptionLog;
+use reinvently\ondemand\core\components\loggers\models\ExceptionLog;
 use reinvently\ondemand\core\modules\asyncemail\models\AsyncEmail;
 use yii\mail\BaseMessage;
 use yii\mail\MailerInterface;

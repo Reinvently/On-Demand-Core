@@ -11,18 +11,17 @@
  * Time: 20:50
  */
 
-namespace reinvently\ondemand\core\models;
+namespace reinvently\ondemand\core\components\loggers\models;
 
 
 use reinvently\ondemand\core\components\model\CoreModel;
+use yii\base\InvalidArgumentException;
 use yii\base\InvalidParamException;
 use yii\helpers\Json;
 use yii\web\Application;
 use yii\web\Request;
 
 /**
- * This is the model class for table "apiException".
- *
  * @property integer $id
  * @property integer $datetime
  * @property string $route
@@ -62,8 +61,11 @@ class ExceptionLog extends CoreModel
                     !empty($bodyParams) ? $bodyParams : [],
                     !empty($queryParams) ? $queryParams : []
                 ));
+            } elseif (\Yii::$app->request instanceof \yii\console\Request) {
+                $exceptionLog->generateHtmlRequestParams(\Yii::$app->request->getParams());
             }
             $exceptionLog->save();
+
         } catch (\Exception $e) {}
 
     }
@@ -142,7 +144,7 @@ class ExceptionLog extends CoreModel
             $request .= ' <b>Params:</b><br/><pre>';
             $request .= Json::encode($params, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
             $request .= '</pre>';
-        } catch (InvalidParamException $e) {
+        } catch (InvalidArgumentException $e) {
             $request = '<pre>';
             $request .= $e->getMessage();
             $request .= "\n";

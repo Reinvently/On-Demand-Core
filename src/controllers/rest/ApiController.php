@@ -14,6 +14,7 @@
 namespace reinvently\ondemand\core\controllers\rest;
 
 
+use reinvently\ondemand\core\components\loggers\controllers\ApiLogControllerTrait;
 use reinvently\ondemand\core\components\model\CoreModel;
 use reinvently\ondemand\core\modules\role\models\Role;
 use reinvently\ondemand\core\modules\user\models\User;
@@ -22,8 +23,14 @@ use yii\base\Controller;
 use yii\rest\ActiveController;
 use yii\web\ForbiddenHttpException;
 
+/**
+ * Class ApiController
+ * @package reinvently\ondemand\core\controllers\rest
+ */
 abstract class ApiController extends ActiveController
 {
+    use ApiLogControllerTrait;
+
     const JSON = 'on_demand_json';
 
     const UPDATE_SCENARIO = 'api/update';
