@@ -1,16 +1,18 @@
 <?php
 /**
- * @copyright Reinvently (c) 2017
+ * @copyright Reinvently (c) 2018
  * @link http://reinvently.com/
  * @license https://opensource.org/licenses/Apache-2.0 Apache License 2.0
  */
 
 namespace reinvently\ondemand\core\modules\order\models;
 
+use reinvently\ondemand\core\components\model\CoreModel;
 use reinvently\ondemand\core\components\statemachine\StateMachineModel;
 use reinvently\ondemand\core\components\transport\ApiTransportTrait;
 use reinvently\ondemand\core\modules\address\models\Address;
 use reinvently\ondemand\core\modules\orderproduct\models\OrderProduct;
+use reinvently\ondemand\core\modules\servicearea\models\ServiceArea;
 use reinvently\ondemand\core\modules\user\models\User;
 use yii\db\BaseActiveRecord;
 
@@ -24,6 +26,7 @@ use yii\db\BaseActiveRecord;
  * @property int $v version of document
  * @property int userId
  * @property int addressId
+ * @property int $serviceAreaId
  * @property string firstName
  * @property string lastName
  * @property string phone
@@ -33,12 +36,17 @@ use yii\db\BaseActiveRecord;
  * @property OrderProduct[] orderProducts
  * @property User user
  * @property Address address
+ * @property ServiceArea serviceArea
  */
 abstract class Order extends StateMachineModel
 {
     use ApiTransportTrait;
 
     public $orderProductModelClass = OrderProduct::class;
+
+    public $addressModelClass = Address::class;
+
+    public $serviceAreaModelClass = ServiceArea::class;
 
     /** example of state machine
     public function getStateMachineParams()
@@ -77,7 +85,7 @@ abstract class Order extends StateMachineModel
     {
         return [
             [['status', 'userId'], 'required'],
-            [['firstName', 'lastName', 'phone', 'addressId'], 'safe'],
+            [['serviceAreaId', 'firstName', 'lastName', 'phone', 'addressId'], 'safe'],
         ];
     }
 
@@ -113,7 +121,7 @@ abstract class Order extends StateMachineModel
      */
     public function getUser()
     {
-        /** @var BaseActiveRecord $class */
+        /** @var CoreModel $class */
         $class = \Yii::$app->user->identityClass;
         return $this->hasOne($class::className(), ['id' => 'userId']);
     }
@@ -124,8 +132,17 @@ abstract class Order extends StateMachineModel
     public function getAddress()
     {
         /** @var BaseActiveRecord $class */
-        return $this->hasOne(Address::class, ['id' => 'addressId']);
+        return $this->hasOne($this->addressModelClass, ['id' => 'addressId']);
     }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getServiceArea()
+    {
+        return $this->hasOne($this->serviceAreaModelClass, ['id' => 'serviceAreaId']);
+    }
+
 
     /**
      * @return array
@@ -137,6 +154,7 @@ abstract class Order extends StateMachineModel
             'status' => $this->status,
             'userId' => $this->userId,
             'addressId' => $this->addressId,
+            'serviceAreaId' => $this->serviceAreaId,
             'firstName' => $this->firstName,
             'lastName' => $this->lastName,
             'phone' => $this->phone,

@@ -1,6 +1,6 @@
 <?php
 /**
- * @copyright Reinvently (c) 2017
+ * @copyright Reinvently (c) 2018
  * @link http://reinvently.com/
  * @license https://opensource.org/licenses/Apache-2.0 Apache License 2.0
  */
@@ -20,6 +20,7 @@ class OrderTableMigration extends Migration
             'status' => $this->string(),
             'userId' => $this->integer() . ' UNSIGNED',
             'addressId' => $this->integer() . ' UNSIGNED',
+            'serviceAreaId' => $this->integer()->unsigned(),
             'firstName' => $this->string(),
             'lastName' => $this->string(),
             'phone' => $this->string(),

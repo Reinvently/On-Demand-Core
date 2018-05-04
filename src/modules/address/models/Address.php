@@ -1,6 +1,6 @@
 <?php
 /**
- * @copyright Reinvently (c) 2017
+ * @copyright Reinvently (c) 2018
  * @link http://reinvently.com/
  * @license https://opensource.org/licenses/Apache-2.0 Apache License 2.0
  */
@@ -12,6 +12,8 @@ namespace reinvently\ondemand\core\modules\address\models;
 use reinvently\ondemand\core\components\model\CoreModel;
 use reinvently\ondemand\core\components\transport\ApiInterface;
 use reinvently\ondemand\core\components\transport\ApiTransportTrait;
+use reinvently\ondemand\core\modules\servicearea\models\Zip;
+use yii\db\ActiveQuery;
 
 /**
  * Class Address
@@ -19,16 +21,23 @@ use reinvently\ondemand\core\components\transport\ApiTransportTrait;
  *
  * @property int id
  * @property int userId
- * @property flout latitude
- * @property flout longitude
+ * @property double latitude
+ * @property double longitude
  * @property string address
  * @property int createdAt
  * @property int updatedAt
+ * @property string $country
+ * @property string $zip
+ * @property string $stateCode
+ * @property string $city
  *
+ * @property Zip $zipObject
  */
 class Address extends CoreModel implements ApiInterface
 {
     use ApiTransportTrait;
+
+    public $zipModelClass = Zip::class;
 
     /**
      * @return array the validation rules.
@@ -37,7 +46,9 @@ class Address extends CoreModel implements ApiInterface
     {
         return [
             [['address', 'latitude', 'longitude'], 'required'],
-            [['latitude', 'longitude'], 'double']
+            [['latitude', 'longitude'], 'double'],
+            [['country', 'zip'], 'required'],
+            [['country', 'zip', 'stateCode', 'city'], 'string', 'max' => 255],
         ];
     }
 
@@ -52,6 +63,14 @@ class Address extends CoreModel implements ApiInterface
     }
 
     /**
+     * @return ActiveQuery
+     */
+    public function getZipObject()
+    {
+        return $this->hasOne($this->zipModelClass, ['zip' => 'zip']);
+    }
+
+    /**
      * @return array
      */
     public function getItemForApi()
@@ -63,6 +82,10 @@ class Address extends CoreModel implements ApiInterface
             'longitude' => $this->longitude,
             'createdAt' => $this->createdAt,
             'updatedAt' => $this->updatedAt,
+            'country' => $this->country,
+            'zip' => $this->zip,
+            'stateCode' => $this->stateCode,
+            'city' => $this->city,
         ];
     }
 
@@ -74,6 +97,8 @@ class Address extends CoreModel implements ApiInterface
         return [
             'id' => $this->id,
             'address' => $this->address,
+            'country' => $this->country,
+            'zip' => $this->zip,
         ];
     }
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * @copyright Reinvently (c) 2017
+ * @copyright Reinvently (c) 2018
  * @link http://reinvently.com/
  * @license https://opensource.org/licenses/Apache-2.0 Apache License 2.0
  */
@@ -21,8 +21,16 @@ class AddressTableMigration extends Migration
             'longitude' => $this->string(),
             'address' => $this->string(),
             'createdAt' => $this->integer() . ' UNSIGNED NOT NULL',
-            'updatedAt' => $this->integer() . ' UNSIGNED NOT NULL'
+            'updatedAt' => $this->integer() . ' UNSIGNED NOT NULL',
+            'country' => $this->string()->notNull(),
+            'zip' => $this->string()->notNull(),
+            'stateCode' => $this->string(),
+            'city' => $this->string(),
         ], 'ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci');
+
+        $this->createIndex('country_zip', 'address', ['country', 'zip'], true);
+        $this->createIndex('zip', 'address', 'zip', true);
+
     }
 
     public function down()
