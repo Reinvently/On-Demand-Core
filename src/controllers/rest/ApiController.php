@@ -84,6 +84,25 @@ abstract class ApiController extends ActiveController
         return $verbs;
     }
 
+    protected function setLanguage()
+    {
+
+    }
+
+    public function beforeAction($action)
+    {
+        $result = parent::beforeAction($action);
+
+        $user = $this->getUser();
+        if ($user && $user->language) {
+            \Yii::$app->language = $user->language;
+        }
+
+        $this->saveLogRequest();
+
+        return $result;
+    }
+
     /**
      * @param \yii\base\Action $action
      * @param mixed $result
@@ -93,6 +112,8 @@ abstract class ApiController extends ActiveController
     {
         /** @var mixed $result */
         $result = Controller::afterAction($action, $result);
+
+        $this->saveLogResponse();
 
         /** @var Serializer $serializer */
         $serializer = Yii::createObject($this->serializer);
@@ -135,6 +156,17 @@ abstract class ApiController extends ActiveController
             return;
         }
 
+        /** @var User $user */
+        $user = Yii::$app->getUser()->identity;
+
+        if ($user->roleId == Role::ADMIN) {
+            return;
+        }
+
+        if (!$model) {
+            throw new ForbiddenHttpException();
+        }
+
         $userId = null;
         /** @var CoreModel $model */
         if ($model instanceof User) {
@@ -142,13 +174,6 @@ abstract class ApiController extends ActiveController
         } elseif ($model->hasAttribute('userId')) {
             $userId = $model->userId;
         } else {
-            return;
-        }
-
-        /** @var User $user */
-        $user = Yii::$app->getUser()->identity;
-
-        if ($user->roleId == Role::ADMIN) {
             return;
         }
 

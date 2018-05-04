@@ -28,6 +28,7 @@ use yii\web\IdentityInterface;
  * @property string $phone
  * @property int $createdAt
  * @property int $updatedAt
+ * @property string $language
  *
  * @property User identity
  *
@@ -38,6 +39,8 @@ class User extends CoreModel implements IdentityInterface, ApiInterface
     use ApiTransportTrait;
 
     const SCENARIO_GUEST = 'guest';
+
+    const DEFAULT_LANGUAGE = 'ru-RU';
 
     /** @var Client */
     public static $clientModelClass = Client::class;
@@ -143,6 +146,7 @@ class User extends CoreModel implements IdentityInterface, ApiInterface
             ['phone', 'unique'],
             ['password', 'string', 'min' => 6],
             [['firstName', 'lastName', 'phone'], 'string', 'max' => 25],
+            [['language'], 'string'],
             [['firstName', 'lastName'], 'safe'],
         ];
     }
@@ -222,6 +226,17 @@ class User extends CoreModel implements IdentityInterface, ApiInterface
         return Yii::$app->getSecurity()->generateRandomString(32);
     }
 
+    /**
+     * @return string
+     */
+    public function getLanguage()
+    {
+        if (!$this->language) {
+            return static::DEFAULT_LANGUAGE;
+        }
+
+        return $this->language;
+    }
 
     /**
      * @return array
@@ -234,6 +249,7 @@ class User extends CoreModel implements IdentityInterface, ApiInterface
             'firstName' => $this->firstName,
             'lastName' => $this->lastName,
             'phone' => $this->phone,
+            'language' => $this->language,
         ];
     }
 
