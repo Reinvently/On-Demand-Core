@@ -40,8 +40,6 @@ class User extends CoreModel implements IdentityInterface, ApiInterface
 
     const SCENARIO_GUEST = 'guest';
 
-    const DEFAULT_LANGUAGE = 'ru-RU';
-
     /** @var Client */
     public static $clientModelClass = Client::class;
 
