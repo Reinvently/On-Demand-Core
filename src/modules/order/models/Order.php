@@ -111,7 +111,7 @@ abstract class Order extends StateMachineModel
      */
     public function getOrderProducts()
     {
-        /** @var BaseActiveRecord $class */
+        /** @var CoreModel $class */
         $class = $this->orderProductModelClass;
         return $this->hasMany($class::className(), ['orderId' => 'id']);
     }

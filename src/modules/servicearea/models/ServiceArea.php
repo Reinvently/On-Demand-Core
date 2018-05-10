@@ -9,6 +9,7 @@
 namespace reinvently\ondemand\core\modules\servicearea\models;
 
 use reinvently\ondemand\core\components\model\CoreModel;
+use reinvently\ondemand\core\components\transport\ApiInterface;
 use reinvently\ondemand\core\components\transport\ApiTransportTrait;
 use reinvently\ondemand\core\modules\order\models\Order;
 use reinvently\ondemand\core\modules\product\models\Product;
@@ -26,7 +27,7 @@ use yii\db\ActiveQuery;
  * @property Order[] $orders
  * @property Product[] $products
  */
-class ServiceArea extends CoreModel
+class ServiceArea extends CoreModel implements ApiInterface
 {
     use ApiTransportTrait;
 

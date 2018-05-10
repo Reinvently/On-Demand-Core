@@ -1,0 +1,48 @@
+config examle:
+
+return [
+    'components' => [
+        'authClientCollection' => [
+            'class' => 'yii\authclient\Collection',
+            'clients' => [
+                'google' => [
+                    'class' => 'yii\authclient\clients\Google',
+                    'clientId' => 'google_client_id',
+                    'clientSecret' => 'google_client_secret',
+                ],
+                'facebook' => [
+                    'class' => 'yii\authclient\clients\Facebook',
+                    'clientId' => 'facebook_client_id',
+                    'clientSecret' => 'facebook_client_secret',
+                ],
+                // etc.
+            ],
+        ]
+        // ...
+    ],
+    // ...
+];
+
+Out of the box the following clients are provided:
+
+[[\yii\authclient\clients\Facebook|Facebook]].
+[[yii\authclient\clients\GitHub|GitHub]].
+Google (via [[yii\authclient\clients\Google|OAuth]] and [[yii\authclient\clients\GoogleHybrid|OAuth Hybrid]]).
+[[yii\authclient\clients\LinkedIn|LinkedIn]].
+[[yii\authclient\clients\Live|Microsoft Live]].
+[[yii\authclient\clients\Twitter|Twitter]].
+[[yii\authclient\clients\VKontakte|VKontakte]].
+[[yii\authclient\clients\Yandex|Yandex]].
+
+Configuration for each client is a bit different.
+For OAuth it's required to get client ID and secret key from the service you're going to use.
+For OpenID it works out of the box in most cases.
+
+
+
+Adding widget to login view
+
+    <?= yii\authclient\widgets\AuthChoice::widget([
+        'baseAuthUrl' => ['site/auth'],
+        'popupMode' => false,
+    ]) ?>

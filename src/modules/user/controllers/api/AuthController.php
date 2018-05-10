@@ -1,6 +1,6 @@
 <?php
 /**
- * @copyright Reinvently (c) 2017
+ * @copyright Reinvently (c) 2018
  * @link http://reinvently.com/
  * @license https://opensource.org/licenses/Apache-2.0 Apache License 2.0
  */
@@ -57,23 +57,12 @@ class AuthController extends ApiTameController
         /** @var AuthModel $model */
         $model = new AuthModel();
         if ($model->load(['AuthModel' => $data]) and $model->login()) {
+
             /** @var Client $client */
-            $client = Client::findActive($uuid, $model->getUser()->id);
-            if (!$client) {
-                // Create new Client
-                /** @var Client $client */
-                $client = new Client();
-                $client->userId = $model->getUser()->id;
-                $client->uuid = $uuid;
-                $client->token = $client->generateToken();
-                $client->ip = Yii::$app->request->userIP;
-                if (!$client->save()) {
-                    return $client;
-                }
-            }
+            $client = $model->getUser()->generateClientWithAuthKey($uuid);
 
             return $this->getTransport()->responseObject([
-                'uuid' => $uuid,
+                'uuid' => $client->uuid,
                 'token' => $client->token,
                 'id' => $client->userId
             ]);
@@ -87,6 +76,7 @@ class AuthController extends ApiTameController
     {
         $uuid = Yii::$app->request->post('uuid', self::getSessionId());
 
+
         /** @var Client $client */
         $client = Client::findActive($uuid);
         if (!$client) {
@@ -95,16 +85,8 @@ class AuthController extends ApiTameController
             /** @var User $user */
             $user = $userClass::createGuest();
 
-            // Create new Client
             /** @var Client $client */
-            $client = new Client();
-            $client->userId = $user->id;
-            $client->uuid = $uuid;
-            $client->token = $client->generateToken();
-            $client->ip = Yii::$app->request->userIP;
-            if (!$client->save()) {
-                throw new LogicException();
-            }
+            $client = $user->generateClientWithAuthKey($uuid);
         }
 
         $roleModelClass = $this->roleModelClass;
@@ -113,7 +95,7 @@ class AuthController extends ApiTameController
         }
 
         return $this->getTransport()->responseObject([
-            'uuid' => $uuid,
+            'uuid' => $client->uuid,
             'token' => $client->token,
             'id' => $client->userId
         ]);

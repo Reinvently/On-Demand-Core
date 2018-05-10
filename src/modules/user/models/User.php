@@ -1,6 +1,6 @@
 <?php
 /**
- * @copyright Reinvently (c) 2017
+ * @copyright Reinvently (c) 2018
  * @link http://reinvently.com/
  * @license https://opensource.org/licenses/Apache-2.0 Apache License 2.0
  */
@@ -10,6 +10,7 @@ namespace reinvently\ondemand\core\modules\user\models;
 use reinvently\ondemand\core\components\model\CoreModel;
 use reinvently\ondemand\core\components\transport\ApiInterface;
 use reinvently\ondemand\core\components\transport\ApiTransportTrait;
+use reinvently\ondemand\core\exceptions\LogicException;
 use reinvently\ondemand\core\modules\role\models\Role;
 use Yii;
 use yii\base\Exception;
@@ -201,39 +202,37 @@ class User extends CoreModel implements IdentityInterface, ApiInterface
         return parent::beforeValidate();
     }
 
-    public function generateAuthKey()
+    /**
+     * @param $uuid
+     * @return Client
+     * @throws LogicException
+     */
+    public function generateClientWithAuthKey($uuid = null)
     {
         if ($this->getIsNewRecord()) {
-            throw new Exception('User must be saved in database');
+            throw new LogicException('User must be saved in database');
         }
 
-        $this->authKey = $this->_generateAuthKey();
-        try {
-            $this->update(false, ['authKey']);
-        } catch (Exception $e) {
-            if (isset($e->errorInfo[1]) && $e->errorInfo[1] === 1062 /* ER_DUP_ENTRY */) {
-                $this->generateAuthKey();
-            } else {
-                throw $e;
+        $client = null;
+        if ($uuid) {
+            $client = Client::findActive($uuid, $this->id);
+        } else {
+            $uuid = Yii::$app->getSecurity()->generateRandomString(32);
+        }
+        if (!$client) {
+            // Create new Client
+            /** @var Client $client */
+            $client = new Client();
+            $client->userId = $this->id;
+            $client->uuid = $uuid;
+            $client->token = $client->generateToken();
+            $client->ip = Yii::$app->request->userIP;
+            if (!$client->save()) {
+                throw new LogicException('Client not saved');
             }
         }
-    }
 
-    private function _generateAuthKey()
-    {
-        return Yii::$app->getSecurity()->generateRandomString(32);
-    }
-
-    /**
-     * @return string
-     */
-    public function getLanguage()
-    {
-        if (!$this->language) {
-            return static::DEFAULT_LANGUAGE;
-        }
-
-        return $this->language;
+        return $client;
     }
 
     /**

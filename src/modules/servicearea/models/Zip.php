@@ -9,6 +9,7 @@
 namespace reinvently\ondemand\core\modules\servicearea\models;
 
 use reinvently\ondemand\core\components\model\CoreModel;
+use reinvently\ondemand\core\components\transport\ApiInterface;
 use reinvently\ondemand\core\components\transport\ApiTransportTrait;
 use reinvently\ondemand\core\modules\address\models\Address;
 use yii\db\ActiveQuery;
@@ -25,7 +26,7 @@ use yii\db\ActiveQuery;
  *
  * @property ServiceArea serviceArea
  */
-class Zip extends CoreModel
+class Zip extends CoreModel implements ApiInterface
 {
     use ApiTransportTrait;
 
