@@ -58,7 +58,9 @@ class Address extends CoreModel implements ApiInterface
             $this->createdAt = time();
             $this->userId = \Yii::$app->user->id;
         }
-        $this->updatedAt = time();
+        if ($this->getDirtyAttributes()) {
+            $this->updatedAt = time();
+        }
         return parent::beforeSave($insert);
     }
 

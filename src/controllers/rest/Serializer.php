@@ -92,6 +92,8 @@ class Serializer extends \yii\rest\Serializer
                 return $this->getTransport()->responseItem($model);
             } elseif ($action instanceof CreateAction) {
                 return $this->getTransport()->responseItemId($model);
+            } elseif ($action instanceof BatchSaveAction) {
+                return $this->getTransport()->responseItemId($model);
             } elseif (
                 $action instanceof DeleteAction
                 || $action instanceof UpdateAction

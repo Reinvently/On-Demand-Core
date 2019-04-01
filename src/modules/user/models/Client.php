@@ -80,7 +80,10 @@ class Client extends CoreModel implements ApiInterface
 
     public function beforeSave($insert)
     {
-        $this->expiredAt = isset(Yii::$app->params['tokenDuration']) ? Yii::$app->params['tokenDuration'] : (time() + 60 * 60 * 24 * 7);
+        $this->expiredAt = time() + (60 * 60 * 24 * 30);
+        if (isset(Yii::$app->params['tokenDuration'])) {
+            $this->expiredAt = time() + Yii::$app->params['tokenDuration'];
+        }
         return parent::beforeSave($insert);
     }
 

@@ -1,5 +1,6 @@
 {
     "require": {
+        "igogo5yo/yii2-upload-from-url": "1.4",
         "2amigos/yii2-file-upload-widget":             "1.0.7",
         "himiklab/yii2-easy-thumbnail-image-helper":   "1.0.2"
     }

@@ -76,7 +76,7 @@ class OrderProduct extends CoreModel implements ApiInterface
             [['orderId', 'productId'], 'unique', 'targetAttribute' => ['orderId', 'productId']],
             [['orderId', 'productId', 'count'], 'safe'],
             [['title'], 'string', 'max' => 255],
-            [['shortDescription', 'description',], 'string', 'max' => 0xFFFF],
+            [['shortDescription', 'description',], 'string', 'max' => 0xFFFE],
         ];
     }
 

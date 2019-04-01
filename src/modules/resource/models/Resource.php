@@ -7,16 +7,23 @@
 
 namespace reinvently\ondemand\core\modules\resource\models;
 
+use igogo5yo\uploadfromurl\UploadFromUrl;
+use Imagine\Image\Box;
+use Imagine\Image\ManipulatorInterface;
 use reinvently\ondemand\core\components\loggers\models\ExceptionLog;
 use reinvently\ondemand\core\components\model\CoreModel;
 use reinvently\ondemand\core\components\transport\ApiInterface;
 use reinvently\ondemand\core\components\transport\ApiTransportTrait;
 use reinvently\ondemand\core\controllers\admin\AdminController;
 use reinvently\ondemand\core\controllers\rest\ApiController;
+use reinvently\ondemand\core\exceptions\LogicException;
 use reinvently\ondemand\core\modules\resource\components\EasyThumbnailImage;
+use yii\db\Exception;
 use yii\helpers\FileHelper;
 use yii\helpers\Html;
+use yii\helpers\Json;
 use yii\helpers\Url;
+use yii\imagine\Image;
 use yii\web\UploadedFile;
 
 /**
@@ -34,7 +41,7 @@ use yii\web\UploadedFile;
  *
  */
 
-abstract class Resource extends CoreModel implements ApiInterface
+class Resource extends CoreModel implements ApiInterface
 {
     use ApiTransportTrait;
 
@@ -46,8 +53,16 @@ abstract class Resource extends CoreModel implements ApiInterface
 
     const MAX_FILE_SIZE = 209715200; /*200MB*/
 
+    const UPLOAD_FROM_URL_SCENARIO = 'upload_from_url_scenario';
+
     /** @var UploadedFile */
     public $file;
+
+    /** @var UploadFromUrl */
+    public $fileFromUrl;
+
+    /** @var string */
+    public $url;
 
     /**
      * @inheritdoc
@@ -66,6 +81,111 @@ abstract class Resource extends CoreModel implements ApiInterface
     }
 
     /**
+     * @param $url
+     * @param $width
+     * @param $height
+     * @param $alias
+     * @param bool $deleteOrigin
+     * @return \reinvently\ondemand\core\modules\resource\models\Resource
+     * @throws LogicException
+     */
+    static protected function createTempResource($url, $width, $height, $alias, $deleteOrigin = true)
+    {
+        $resource = new Resource();
+        $resource->type = Resource::TYPE_IMAGE;
+        $resource->alias = 'temp';
+        $resource->url = $url;
+
+        $resource->setScenario(Resource::UPLOAD_FROM_URL_SCENARIO);
+        if ($resource->save()) {
+            $resource2 = new Resource();
+            $resource2->type = Resource::TYPE_IMAGE;
+            $resource2->alias = $alias;
+
+            $resource2 = static::createThumbnailResource($resource->generateRootPath(), $resource2, $width, $height);
+        } else {
+            throw new LogicException(Json::encode($resource->getErrors()));
+        }
+
+        if ($deleteOrigin) {
+            $resource->delete();
+        }
+
+        return $resource2;
+
+    }
+
+    /**
+     * @param $path
+     * @param \reinvently\ondemand\core\modules\resource\models\Resource $resource
+     * @param $width
+     * @param $height
+     * @return \reinvently\ondemand\core\modules\resource\models\Resource
+     * @throws LogicException
+     */
+    static protected function createThumbnailResource($path, $resource, $width, $height)
+    {
+        $extensions = FileHelper::getExtensionsByMimeType(FileHelper::getMimeType(
+            $path, null, false));
+
+        if (!$extensions) {
+            throw new LogicException('Invalid ExtensionsByMimeType');
+        }
+
+
+        $invalidExtension = true;
+        foreach ($extensions as $extension) {
+            $invalidExtension = false;
+            $resource->extension = $extension;
+
+            try {
+                if (!$resource->save()) {
+                    throw new LogicException(Json::encode($resource->getErrors()));
+                }
+
+                $mode = ManipulatorInterface::THUMBNAIL_INSET;
+
+                $box = new Box($width, $height);
+                $image = Image::getImagine()->open($path);
+                $image = $image->thumbnail($box, $mode);
+
+                $filename = $resource->generateRootPath();
+                FileHelper::createDirectory(dirname($filename), $mode = 0777, $recursive = true);
+                $image->save($filename);
+            } catch (\Imagine\Exception\InvalidArgumentException $exception) {
+                $invalidExtension = true;
+                continue;
+            }
+            break;
+        }
+
+        if ($invalidExtension) {
+            throw new LogicException('Invalid ExtensionsByMimeType');
+        }
+
+        return $resource;
+    }
+
+    /**
+     * @param $url
+     * @param $width
+     * @param $height
+     * @param $alias
+     * @param bool $deleteOrigin
+     * @return \reinvently\ondemand\core\modules\resource\models\Resource
+     */
+    static public function generateThumbnailByUrl($url, $width, $height, $alias, $deleteOrigin = true)
+    {
+        try {
+            return self::createTempResource($url, $width, $height, $alias, $deleteOrigin);
+        } catch (\Exception $e) {
+            ExceptionLog::saveException($e);
+        }
+        return null;
+    }
+
+
+    /**
      * @inheritdoc
      */
     public function rules()
@@ -74,7 +194,7 @@ abstract class Resource extends CoreModel implements ApiInterface
             [['alias', 'type'], 'required'],
             [['type'], 'integer'],
             [['title', 'alias'], 'string', 'max' => 255],
-            [['description'], 'string', 'max' => 0xffff],
+            [['description'], 'string', 'max' => 0xfffe],
             [['version'], 'default', 'value' => 0],
             [['file'], 'file', 'maxSize' => static::MAX_FILE_SIZE,
                 'on' => [ApiController::UPDATE_SCENARIO, AdminController::UPDATE_SCENARIO]
@@ -82,6 +202,11 @@ abstract class Resource extends CoreModel implements ApiInterface
             [['file'], 'file', 'maxSize' => static::MAX_FILE_SIZE, 'skipOnEmpty' => false,
                 'on' => [ApiController::CREATE_SCENARIO, AdminController::CREATE_SCENARIO]
             ],
+            [['fileFromUrl'], 'igogo5yo\uploadfromurl\FileFromUrlValidator',
+                'maxSize' => static::MAX_FILE_SIZE, 'skipOnEmpty' => false,
+                'on' => [static::UPLOAD_FROM_URL_SCENARIO]
+            ],
+            [['url'], 'string', 'on' => [static::UPLOAD_FROM_URL_SCENARIO]],
         ];
     }
 
@@ -150,9 +275,9 @@ abstract class Resource extends CoreModel implements ApiInterface
         return Resource::UPLOAD_PATH
             . '/' . $this->alias
             . '/' . substr($string, 0, 4)
-            . '/' . substr($string, 5, 3)
+            . '/' . substr($string, 4, 3)
             . '/' . $string
-            . '.' . $this->extension;
+            . ($this->extension ? '.' . $this->extension : '');
     }
 
     /**
@@ -188,7 +313,7 @@ abstract class Resource extends CoreModel implements ApiInterface
         try {
             $result = Url::toRoute(
                 EasyThumbnailImage::thumbnailFileUrl(
-                    $this->generatePath(),
+                    $this->generateRootPath(),
                     88,
                     88,
                     EasyThumbnailImage::THUMBNAIL_INSET,
@@ -260,9 +385,9 @@ abstract class Resource extends CoreModel implements ApiInterface
                     $modelView = $modelName = (new \ReflectionClass($object))->getShortName();
 
                     $objectName = $object->id;
-                    if (isset($object->name)) {
+                    if (isset($object->name) && $object->name) {
                         $objectName = $object->name;
-                    } elseif (isset($object->title)) {
+                    } elseif (isset($object->title) && $object->title) {
                         $objectName = $object->title;
                     }
 
@@ -291,11 +416,23 @@ abstract class Resource extends CoreModel implements ApiInterface
     }
 
     /**
+     * @return UploadFromUrl
+     */
+    public function getUploadFromUrl()
+    {
+        if (!$this->fileFromUrl && $this->getScenario() == static::UPLOAD_FROM_URL_SCENARIO) {
+            $this->fileFromUrl = UploadFromUrl::getInstance($this, 'url');
+        }
+        return $this->fileFromUrl;
+    }
+
+    /**
      * @inheritDoc
      */
     public function beforeValidate()
     {
         $this->getUploadFile();
+        $this->getUploadFromUrl();
         return parent::beforeValidate();
     }
 
@@ -312,6 +449,9 @@ abstract class Resource extends CoreModel implements ApiInterface
         $this->version++;
         if ($this->getUploadFile()) {
             $this->extension = $this->getUploadFile()->getExtension();
+        }
+        if ($this->getUploadFromUrl()) {
+            $this->extension = $this->getUploadFromUrl()->extension;
         }
 
         return parent::beforeSave($insert);
@@ -332,8 +472,8 @@ abstract class Resource extends CoreModel implements ApiInterface
      */
     public function beforeDelete()
     {
-        $path = $this->generatePath();
-        if (is_file($path)) {
+        $path = $this->generateRootPath();
+        if (is_file($path) && file_exists($path)) {
             unlink($path);
         }
         return parent::beforeDelete();
@@ -345,10 +485,14 @@ abstract class Resource extends CoreModel implements ApiInterface
      */
     protected function uploadFile()
     {
+        $path = $this->generateRootPath();
         if ($this->getUploadFile()) {
-            $path = $this->generatePath();
-            FileHelper::createDirectory(dirname($path), $mode = 0775, $recursive = true);
+            FileHelper::createDirectory(dirname($path), $mode = 0777, $recursive = true);
             return $this->getUploadFile()->saveAs($path);
+        }
+        if ($this->getUploadFromUrl()) {
+            FileHelper::createDirectory(dirname($path), $mode = 0777, $recursive = true);
+            return $this->getUploadFromUrl()->saveAs($path);
         }
         return false;
     }

@@ -15,6 +15,7 @@
 namespace reinvently\ondemand\core\vendor\tasker\models;
 
 use Yii;
+use yii\helpers\ArrayHelper;
 
 /**
  * This is the model class for table "tasker".
@@ -29,6 +30,22 @@ use Yii;
  */
 class Tasker extends \yii\db\ActiveRecord
 {
+    static public function getStatusStrings()
+    {
+        return [
+            null => 'All',
+            \reinvently\ondemand\core\vendor\tasker\daemon\Tasker::STATUS_DISABLE => 'DISABLE',
+            \reinvently\ondemand\core\vendor\tasker\daemon\Tasker::STATUS_READY_TO_RUN => 'READY_TO_RUN',
+            \reinvently\ondemand\core\vendor\tasker\daemon\Tasker::STATUS_WORKING_ON_TASK => 'WORKING_ON_TASK',
+            \reinvently\ondemand\core\vendor\tasker\daemon\Tasker::STATUS_STUCK => 'STUCK',
+        ];
+    }
+
+    static public function getStatusString($status)
+    {
+        return ArrayHelper::getValue(static::getStatusStrings(), $status);
+    }
+
     /**
      * @inheritdoc
      */

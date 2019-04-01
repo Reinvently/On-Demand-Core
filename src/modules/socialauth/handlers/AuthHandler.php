@@ -9,6 +9,8 @@
 namespace reinvently\ondemand\core\modules\socialauth\handlers;
 
 
+use reinvently\ondemand\core\exceptions\LogicException;
+use reinvently\ondemand\core\exceptions\UserException;
 use reinvently\ondemand\core\modules\socialauth\models\Auth;
 use reinvently\ondemand\core\modules\user\models\User;
 use Yii;
@@ -35,30 +37,43 @@ class AuthHandler
         $attributes = $this->client->getUserAttributes();
         $email = ArrayHelper::getValue($attributes, 'email');
         $id = ArrayHelper::getValue($attributes, 'id');
-        $firstName = ArrayHelper::getValue($attributes, 'login');
+        $firstName = ArrayHelper::getValue($attributes, 'first_name');
+        $lastName = ArrayHelper::getValue($attributes, 'last_name');
 
         /* @var Auth $auth */
         $auth = Auth::find()->where([
             'source' => $this->client->getId(),
-            'source_id' => $id,
+            'sourceId' => $id,
         ])->one();
+
+        if (!Yii::$app->user) {
+            throw new LogicException(
+                Yii::t('app',
+                    'app->user is empty'
+                )
+            );
+        }
 
         if (Yii::$app->user->isGuest) {
             if ($auth) { // login
                 /* @var User $user */
                 $user = $auth->user;
-                $this->updateUserInfo($user);
-                Yii::$app->user->login($user, Yii::$app->params['user.rememberMeDuration']);
+//                $this->updateUserInfo($user);
+                Yii::$app->user->login($user);
             } else { // signup
                 if ($email !== null && User::find()->where(['email' => $email])->exists()) {
-                    Yii::$app->getSession()->setFlash('error', [
-                        Yii::t('app', 'User with the same email as in {client} account already exists but isn\'t linked to it. Login using email first to link it.', ['client' => $this->client->getTitle()]),
-                    ]);
+                    throw new UserException(
+                        Yii::t('app',
+                            'User with the same email as in {client} account already exists but isn\'t linked to it. Login using email first to link it.',
+                            ['client' => $this->client->getTitle()]
+                        )
+                    );
                 } else {
                     $password = Yii::$app->security->generateRandomString(6);
 //                    needs to find user by uuid
                     $user = new User([
                         'firstName' => $firstName,
+                        'lastName' => $lastName,
                         'email' => $email,
                         'password' => $password,
                     ]);
@@ -74,22 +89,22 @@ class AuthHandler
                         ]);
                         if ($auth->save()) {
                             $transaction->commit();
-                            Yii::$app->user->login($user, Yii::$app->params['user.rememberMeDuration']);
+                            Yii::$app->user->login($user);
                         } else {
-                            Yii::$app->getSession()->setFlash('error', [
+                            throw new UserException(
                                 Yii::t('app', 'Unable to save {client} account: {errors}', [
                                     'client' => $this->client->getTitle(),
                                     'errors' => json_encode($auth->getErrors()),
-                                ]),
-                            ]);
+                                ])
+                            );
                         }
                     } else {
-                        Yii::$app->getSession()->setFlash('error', [
+                        throw new UserException(
                             Yii::t('app', 'Unable to save user: {errors}', [
                                 'client' => $this->client->getTitle(),
                                 'errors' => json_encode($user->getErrors()),
-                            ]),
-                        ]);
+                            ])
+                        );
                     }
                 }
             }
@@ -103,26 +118,26 @@ class AuthHandler
                 if ($auth->save()) {
                     /** @var User $user */
                     $user = $auth->user;
-                    $this->updateUserInfo($user);
-                    Yii::$app->getSession()->setFlash('success', [
+//                    $this->updateUserInfo($user);
+                    throw new UserException(
                         Yii::t('app', 'Linked {client} account.', [
                             'client' => $this->client->getTitle()
-                        ]),
-                    ]);
+                        ])
+                    );
                 } else {
-                    Yii::$app->getSession()->setFlash('error', [
+                    throw new UserException(
                         Yii::t('app', 'Unable to link {client} account: {errors}', [
                             'client' => $this->client->getTitle(),
                             'errors' => json_encode($auth->getErrors()),
-                        ]),
-                    ]);
+                        ])
+                    );
                 }
             } else { // there's existing auth
-                Yii::$app->getSession()->setFlash('error', [
+                throw new UserException(
                     Yii::t('app',
                         'Unable to link {client} account. There is another user using it.',
-                        ['client' => $this->client->getTitle()]),
-                ]);
+                        ['client' => $this->client->getTitle()])
+                );
             }
         }
     }

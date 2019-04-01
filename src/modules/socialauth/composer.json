@@ -1,5 +1,6 @@
 {
   "require": {
+    "facebook/graph-sdk": "~5.0.0",
     "yiisoft/yii2-authclient": "~2.1.0"
   }
 }

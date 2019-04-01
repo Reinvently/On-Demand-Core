@@ -206,7 +206,7 @@ class TransportJson implements TransportInterface
                 }
             }
 
-            if (empty($v) && (is_array($v) || is_string($v) || is_null($v))) {
+            if (empty($v) && (is_array($v) || $v === '' || $v === null)) {
                 if (is_array($item)) {
                     unset($item[$k]);
                 } elseif (is_object($item)) {

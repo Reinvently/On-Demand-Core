@@ -58,7 +58,9 @@ class Appointment extends CoreModel implements ApiInterface
         if ($this->getIsNewRecord()) {
             $this->createdAt = time();
         }
-        $this->updatedAt = time();
+        if ($this->getDirtyAttributes()) {
+            $this->updatedAt = time();
+        }
         return parent::beforeSave($insert);
     }
 

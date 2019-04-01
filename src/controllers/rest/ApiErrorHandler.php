@@ -17,6 +17,7 @@ use Yii;
 use yii\base\UserException;
 use yii\web\ConflictHttpException;
 use yii\web\ErrorHandler;
+use yii\web\HttpException;
 
 class ApiErrorHandler extends ErrorHandler
 {
@@ -32,6 +33,10 @@ class ApiErrorHandler extends ErrorHandler
         }
 
         ExceptionLog::saveException($exception, true);
+
+        if (!YII_DEBUG && !$exception instanceof UserException && !$exception instanceof HttpException) {
+            $exception = new HttpException(500, Yii::t('app', 'Something went wrong please try again later'));
+        }
 
         return Yii::$app->transport->responseException(
             parent::convertExceptionToArray($exception)

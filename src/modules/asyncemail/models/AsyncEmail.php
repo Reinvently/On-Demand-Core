@@ -116,6 +116,10 @@ class AsyncEmail extends CoreModel
      */
     public static function createByMessage(MessageInterface $message)
     {
+        if (empty($message->getTo())) {
+            return false;
+        }
+
         try {
             $asyncEmail = new AsyncEmail();
             $asyncEmail->object = AsyncEmail::pack($message);
@@ -218,5 +222,11 @@ class AsyncEmail extends CoreModel
         }
         $this->status = static::STATUS_IN_PROGRESS;
         return $this->save(true, ['status']);
+    }
+
+    public function afterValidate()
+    {
+        $this->errorText = mb_substr($this->errorText, 0, 255, 'ASCII');
+        return parent::afterValidate();
     }
 }

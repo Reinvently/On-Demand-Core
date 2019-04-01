@@ -16,10 +16,13 @@ namespace reinvently\ondemand\core\controllers\rest;
 
 use reinvently\ondemand\core\components\loggers\controllers\ApiLogControllerTrait;
 use reinvently\ondemand\core\components\model\CoreModel;
+use reinvently\ondemand\core\modules\order\models\Order;
 use reinvently\ondemand\core\modules\role\models\Role;
 use reinvently\ondemand\core\modules\user\models\User;
 use Yii;
 use yii\base\Controller;
+use yii\base\Model;
+use yii\helpers\ArrayHelper;
 use yii\rest\ActiveController;
 use yii\web\ForbiddenHttpException;
 
@@ -40,6 +43,8 @@ abstract class ApiController extends ActiveController
 
     public $updateScenario = self::UPDATE_SCENARIO;
     public $createScenario = self::CREATE_SCENARIO;
+    public $batchSaveScenario = Model::SCENARIO_DEFAULT;
+    public $fieldsScenario = Model::SCENARIO_DEFAULT;
 
     public function init()
     {
@@ -66,12 +71,33 @@ abstract class ApiController extends ActiveController
     public function actions()
     {
         $actions = parent::actions();
-        $actions['search'] = [
-            'class' => SearchAction::class,
-            'modelClass' => $this->modelClass,
-            'checkAccess' => [$this, 'checkAccess'],
-            'params' => Yii::$app->request->get()
-        ];
+        unset($actions['create']);
+
+        $actions = ArrayHelper::merge($actions,[
+            'batch-save' => [
+                'class' => BatchSaveAction::class,
+                'modelClass' => $this->modelClass,
+                'checkAccess' => [$this, 'checkAccess'],
+                'scenario' => $this->batchSaveScenario,
+            ],
+            'search' => [
+                'class' => SearchAction::class,
+                'modelClass' => $this->modelClass,
+                'checkAccess' => [$this, 'checkAccess'],
+            ],
+            'create' => [
+                'class' => CreateAction::class,
+                'modelClass' => $this->modelClass,
+                'checkAccess' => [$this, 'checkAccess'],
+                'scenario' => $this->createScenario,
+            ],
+            'fields' => [
+                'class' => FieldsAction::class,
+                'modelClass' => $this->modelClass,
+                'checkAccess' => [$this, 'checkAccess'],
+                'scenario' => $this->fieldsScenario,
+            ],
+        ]);
 
         return $actions;
     }
@@ -91,14 +117,14 @@ abstract class ApiController extends ActiveController
 
     public function beforeAction($action)
     {
+        $this->saveLogRequest();
+
         $result = parent::beforeAction($action);
 
         $user = $this->getUser();
         if ($user && $user->language) {
             \Yii::$app->language = $user->language;
         }
-
-        $this->saveLogRequest();
 
         return $result;
     }
@@ -112,8 +138,6 @@ abstract class ApiController extends ActiveController
     {
         /** @var mixed $result */
         $result = Controller::afterAction($action, $result);
-
-        $this->saveLogResponse();
 
         /** @var Serializer $serializer */
         $serializer = Yii::createObject($this->serializer);
@@ -138,13 +162,13 @@ abstract class ApiController extends ActiveController
      * @param bool $autoRenew
      * @return User
      */
-    public function getUser($autoRenew = false)
+    public function getUser($autoRenew = true)
     {
         return Yii::$app->user->getIdentity($autoRenew);
     }
 
     public function fullAccessActions() {
-        return [];
+        return [/*'index', 'update', 'create', 'view', 'delete', 'search'*/];
     }
 
     /**
@@ -167,21 +191,31 @@ abstract class ApiController extends ActiveController
             throw new ForbiddenHttpException();
         }
 
-        $userId = null;
-        /** @var CoreModel $model */
-        if ($model instanceof User) {
-            $userId = $model->id;
-        } elseif ($model->hasAttribute('userId')) {
-            $userId = $model->userId;
-        } else {
-            return;
-        }
+        $userId = $this->checkAccessGetUserId($action, $model, $params);
 
         if ($userId == Yii::$app->getUser()->id) {
             return;
         }
 
         throw new ForbiddenHttpException();
+    }
+
+    /**
+     * @param $action
+     * @param CoreModel|Order $model
+     * @param array $params additional parameters
+     * @return int|null
+     */
+    protected function checkAccessGetUserId($action, $model, $params = [])
+    {
+        $userId = null;
+        if ($model instanceof User) {
+            $userId = $model->id;
+        } elseif ($model->hasAttribute('userId')) {
+            $userId = $model->userId;
+        }
+
+        return $userId;
     }
 
 }

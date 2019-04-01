@@ -44,8 +44,11 @@ class TaskerCyclicTask extends TaskerTask
      */
     public function rules()
     {
-        return array_merge(parent::rules(), ['timeLastRun', 'timeInterval']);
-
+        return [
+            [['timeNextRun', 'status', 'timeLastStatus', 'timeLastRun', 'timeInterval'], 'integer'],
+            [['data', 'log'], 'string'],
+            [['cmd'], 'string', 'max' => 255],
+        ];
     }
 
     /**

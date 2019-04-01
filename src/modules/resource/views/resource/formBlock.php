@@ -9,7 +9,7 @@ use yii\widgets\ActiveForm;
 /* @var int $type */
 
 if (empty($model)) {
-    $model = new \reinvently\ondemand\core\modules\resource\models\ResourceSearch();
+    $model = new \reinvently\ondemand\core\modules\resource\models\Resource();
     if (!empty($alias)) {
         $model->alias = $alias;
     }

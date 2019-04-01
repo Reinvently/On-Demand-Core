@@ -50,7 +50,7 @@ class Payment extends CoreModel implements ApiInterface
      */
     public static function tableName()
     {
-        return '{{%payment}}';
+        return 'payment';
     }
 
     /**
@@ -71,7 +71,9 @@ class Payment extends CoreModel implements ApiInterface
         if ($insert) {
             $this->createdAt = time();
         }
-        $this->updatedAt = time();
+        if ($this->getDirtyAttributes()) {
+            $this->updatedAt = time();
+        }
         return parent::beforeSave($insert);
     }
 

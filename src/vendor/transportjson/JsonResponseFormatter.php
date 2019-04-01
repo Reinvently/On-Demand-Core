@@ -11,9 +11,9 @@ namespace reinvently\ondemand\core\vendor\transportjson;
 
 class JsonResponseFormatter extends \yii\web\JsonResponseFormatter
 {
-    public function format($response)
-    {
-        $this->formatJson($response);
-    }
+//    public function format($response)
+//    {
+//        $this->formatJson($response);
+//    }
 
 } 

@@ -24,7 +24,7 @@ class ExtraFeeYear extends ActiveRecord
      */
     static public function tableName()
     {
-        return '{{%extra_fee_year}}';
+        return 'extra_fee_year';
     }
 
     /**

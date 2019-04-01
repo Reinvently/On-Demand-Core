@@ -45,7 +45,7 @@ class Category extends CoreModel implements ApiInterface
      */
     public static function tableName()
     {
-        return '{{%category}}';
+        return 'category';
     }
 
     /**

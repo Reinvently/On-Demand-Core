@@ -40,9 +40,9 @@ class ConsoleLog extends CoreModel
     {
         return [
             [['startedAt', 'finishedAt'], 'integer'],
-            [['route'], 'string', 'max' => 255],
-            [['request', 'response'], 'string', 'max' => 0xffff],
             [['route', 'request', 'response'], 'filter', 'filter' => '\yii\helpers\HtmlPurifier::process'],
+//            [['route'], 'string', 'max' => 255],
+//            [['request', 'response'], 'string', 'max' => 0xfffe],
         ];
     }
 
@@ -86,20 +86,12 @@ class ConsoleLog extends CoreModel
         $this->response .= '<br/>';
     }
 
-    /**
-     * This method is invoked before validation starts.
-     * The default implementation raises a `beforeValidate` event.
-     * You may override this method to do preliminary checks before validation.
-     * Make sure the parent implementation is invoked so that the event can be raised.
-     * @return boolean whether the validation should be executed. Defaults to true.
-     * If false is returned, the validation will stop and the model is considered invalid.
-     */
-    public function beforeValidate()
+    public function afterValidate()
     {
-        $this->request = mb_substr($this->request, 0, 0xffff);
-        $this->response = mb_substr($this->response, 0, 0xffff);
-        $this->route = mb_substr($this->route, 0, 255);
-        return parent::beforeValidate();
+        $this->request = mb_substr($this->request, 0, 0xfffe, 'ASCII');
+        $this->response = mb_substr($this->response, 0, 0xfffe, 'ASCII');
+        $this->route = mb_substr($this->route, 0, 255, 'ASCII');
+        return parent::afterValidate();
     }
 
 

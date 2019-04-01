@@ -78,7 +78,7 @@ abstract class Order extends StateMachineModel
 
     public static function tableName()
     {
-        return '{{%order}}';
+        return 'order';
     }
 
     public function rules()
@@ -94,7 +94,9 @@ abstract class Order extends StateMachineModel
         if ($insert) {
             $this->createdAt = time();
         }
-        $this->updatedAt = time();
+        if ($this->getDirtyAttributes()) {
+            $this->updatedAt = time();
+        }
         return parent::beforeSave($insert);
     }
 

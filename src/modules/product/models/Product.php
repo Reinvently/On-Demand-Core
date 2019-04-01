@@ -41,7 +41,7 @@ class Product extends CoreModel implements ApiInterface
      */
     public static function tableName()
     {
-        return '{{%product}}';
+        return 'product';
     }
 
     /**
@@ -55,7 +55,7 @@ class Product extends CoreModel implements ApiInterface
             [['serviceAreaId', 'categoryId', 'sort', 'description', 'image', 'price'], 'safe'],
             [['isOneTimePay'], 'boolean'],
             [['title'], 'string', 'max' => 255],
-            [['shortDescription', 'description'], 'string', 'max' => 0xFFFF],
+            [['shortDescription', 'description'], 'string', 'max' => 0xFFFE],
         ];
     }
 

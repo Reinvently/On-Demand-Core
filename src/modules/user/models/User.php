@@ -12,8 +12,10 @@ use reinvently\ondemand\core\components\transport\ApiInterface;
 use reinvently\ondemand\core\components\transport\ApiTransportTrait;
 use reinvently\ondemand\core\exceptions\LogicException;
 use reinvently\ondemand\core\modules\role\models\Role;
+use reinvently\ondemand\core\modules\socialauth\models\Auth;
 use Yii;
 use yii\base\Exception;
+use yii\db\ActiveQuery;
 use yii\web\IdentityInterface;
 
 /**
@@ -34,6 +36,8 @@ use yii\web\IdentityInterface;
  * @property User identity
  *
  * @method User getIdentity(bool $autoRenew)
+ *
+ * @property Auth[] auths
  */
 class User extends CoreModel implements IdentityInterface, ApiInterface
 {
@@ -130,7 +134,7 @@ class User extends CoreModel implements IdentityInterface, ApiInterface
 
     public static function tableName()
     {
-        return '{{%user}}';
+        return 'user';
     }
 
     /**
@@ -161,6 +165,14 @@ class User extends CoreModel implements IdentityInterface, ApiInterface
         return $scenarios;
     }
 
+    /**
+     * @return ActiveQuery
+     */
+    public function getAuths()
+    {
+        return $this->hasMany(Auth::className(), ['userId' => 'id']);
+    }
+
     public function attributeLabels()
     {
         return [
@@ -170,6 +182,10 @@ class User extends CoreModel implements IdentityInterface, ApiInterface
 
     public static function findByUsername($username)
     {
+        if (!$username) {
+            return null;
+        }
+
         return static::find()
             ->orWhere(['email' => $username])
             ->orWhere(['phone' => $username])
@@ -189,14 +205,16 @@ class User extends CoreModel implements IdentityInterface, ApiInterface
         if (!empty($this->getDirtyAttributes(['password']))) {
             $this->password = Yii::$app->getSecurity()->generatePasswordHash($this->password);
         }
-        $this->updatedAt = time();
+        if ($this->getDirtyAttributes()) {
+            $this->updatedAt = time();
+        }
         return parent::beforeSave($insert);
     }
 
     public function beforeValidate()
     {
         if (!$this->roleId) {
-            $this->roleId = Role::GUEST;
+            $this->roleId = Role::USER;
         }
 
         return parent::beforeValidate();

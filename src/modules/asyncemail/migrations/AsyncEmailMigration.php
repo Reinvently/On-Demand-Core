@@ -8,6 +8,8 @@
 namespace reinvently\ondemand\core\modules\asyncemail\migrations;
 
 
+use reinvently\ondemand\core\modules\asyncemail\commands\EmailController;
+use reinvently\ondemand\core\vendor\tasker\daemon\Tasker;
 use yii\db\Migration;
 
 /**
@@ -20,6 +22,13 @@ class AsyncEmailMigration extends Migration
 {
     public function up()
     {
+        $this->insert('tasker_cyclic_task', [
+            'timeInterval' => 5,
+            'status' => Tasker::STATUS_READY_TO_RUN,
+            'timeNextRun' => 0,
+            'cmd' => EmailController::SEND_ALL_BY_SCHEDULER_COMMAND,
+        ]);
+
         $this->createTable('async_email', [
             'id' => $this->primaryKey()->unsigned(),
             'retries' => $this->smallInteger()->unsigned(),

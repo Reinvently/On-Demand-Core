@@ -20,48 +20,33 @@ use Yii;
 trait ApiLogControllerTrait
 {
     /** @var  ApiLog */
-    private $adminLog;
-
-    public function beforeAction($action)
-    {
-        $this->saveLogRequest();
-
-        return parent::beforeAction($action);
-    }
-
-    public function afterAction($action, $result)
-    {
-        $result = parent::afterAction($action, $result);
-        $this->saveLogResponse();
-
-        return $result;
-    }
+    private $apiLog;
 
     /**
      * @return bool $result
      */
     public function saveLogRequest()
     {
-        $this->adminLog = new ApiLog();
+        $this->apiLog = new ApiLog();
         $user = $this->getUser();
         if ($user && $user->currentClient && $user->currentClient->token) {
-            $this->adminLog->token = $user->currentClient->token;
-            $this->adminLog->userId = $user->id;
+            $this->apiLog->token = $user->currentClient->token;
+            $this->apiLog->userId = $user->id;
         }
 
-        $this->adminLog->startedAt = time();
-        $this->adminLog->ip = ip2long(Yii::$app->request->userIP);
-        $this->adminLog->route = $this->route;
-        $this->adminLog->generateHtmlRequestMethod(Yii::$app->request);
-        $this->adminLog->generateHtmlRequestHeaders(Yii::$app->request->getHeaders()->toArray());
+        $this->apiLog->startedAt = time();
+        $this->apiLog->ip = ip2long(Yii::$app->request->userIP);
+        $this->apiLog->route = $this->route;
+        $this->apiLog->generateHtmlRequestMethod(Yii::$app->request);
+        $this->apiLog->generateHtmlRequestHeaders(Yii::$app->request->getHeaders()->toArray());
         $bodyParams = Yii::$app->request->getBodyParams();
         $queryParams = Yii::$app->request->getQueryParams();
-        $this->adminLog->generateHtmlRequestParams(array_merge(
+        $this->apiLog->generateHtmlRequestParams(array_merge(
             !empty($bodyParams) ? $bodyParams : [],
             !empty($queryParams) ? $queryParams : []
         ));
 
-        return $this->adminLog->save();
+        return $this->apiLog->save();
     }
 
     /**
@@ -69,23 +54,24 @@ trait ApiLogControllerTrait
      */
     public function saveLogResponse()
     {
-        if (!$this->adminLog) {
+
+        if (!$this->apiLog) {
             return false;
         }
 
         $user = $this->getUser();
         if($user) {
-            $this->adminLog->userId = $user->id;
+            $this->apiLog->userId = $user->id;
         }
-        $this->adminLog->finishedAt = time();
+        $this->apiLog->finishedAt = time();
 
         if (\Yii::$app->has('response')) {
-            $this->adminLog->generateHtmlResponseStatusCode(\Yii::$app->getResponse());
-            $this->adminLog->generateHtmlResponseHeaders(\Yii::$app->getResponse()->getHeaders()->toArray());
-            $this->adminLog->generateHtmlResponseParams(\Yii::$app->getResponse()->data);
+            $this->apiLog->generateHtmlResponseStatusCode(\Yii::$app->getResponse());
+            $this->apiLog->generateHtmlResponseHeaders(\Yii::$app->getResponse()->getHeaders()->toArray());
+            $this->apiLog->generateHtmlResponseParams(\Yii::$app->getResponse()->data);
         }
 
-        return $this->adminLog->save();
+        return $this->apiLog->save();
     }
 
 }

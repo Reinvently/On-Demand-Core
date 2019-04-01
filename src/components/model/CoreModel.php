@@ -14,11 +14,17 @@ abstract class CoreModel extends ActiveRecord
 {
     use RestModelTrait;
 
-    public static function className()
+    /**
+     * @return string
+     */
+    final static public function className()
     {
         return static::class;
     }
 
+    /**
+     *
+     */
     public function afterValidate()
     {
         $schema = static::getTableSchema();
@@ -36,4 +42,8 @@ abstract class CoreModel extends ActiveRecord
         return parent::afterValidate();
     }
 
+    public function unsafeAttributes()
+    {
+        return array_values(array_diff($this->attributes(), $this->safeAttributes()));
+    }
 }

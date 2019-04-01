@@ -24,7 +24,7 @@ class ExtraFeeWeekday extends ActiveRecord
      */
     static public function tableName()
     {
-        return '{{%extra_fee_weekday}}';
+        return 'extra_fee_weekday';
     }
 
     /**

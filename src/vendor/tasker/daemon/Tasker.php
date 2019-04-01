@@ -1,6 +1,6 @@
 <?php
 /**
- * @copyright Reinvently (c) 2017
+ * @copyright Reinvently (c) 2019
  * @link http://reinvently.com/
  * @license https://opensource.org/licenses/Apache-2.0 Apache License 2.0
  */
@@ -134,15 +134,17 @@ SQL
             throw new \Error('Tasker not found');
         }
 
-        $maxId = array_pop(array_pop($arr));
+        $row = array_pop($arr);
+        $maxId = array_pop($row);
 
-        $arr = $this->db->query("SELECT status from `tasker` WHERE id = $this->id");
+        $arr = $this->db->query("SELECT `status` from `tasker` WHERE id = $this->id");
 
         if (empty($arr)) {
             throw new \Error('Tasker not found');
         }
 
-        $status = array_pop(array_pop($arr));
+        $row = array_pop($arr);
+        $status = array_pop($row);
 
         $numbersOfTasker = Params::get(Params::PARAMS_NUMBERS_OF_TASKER);
 
@@ -374,7 +376,7 @@ SQL
      */
     public function setLog($log)
     {
-        $this->log = mysqli_real_escape_string($this->db->getDb(), $log);
+        $this->log = $log;
     }
 
     /**
@@ -382,7 +384,7 @@ SQL
      */
     public function addLog($log)
     {
-        $this->log .= "\n" . mysqli_real_escape_string($this->db->getDb(), $log);
+        $this->log .= "\n" . $log;
     }
 
     /**
@@ -390,7 +392,7 @@ SQL
      */
     public function getLog()
     {
-        return $this->log;
+        return mysqli_real_escape_string($this->db->getDb(), mb_substr($this->log, 0, 0xfffe, 'ASCII'));
     }
 
     /**

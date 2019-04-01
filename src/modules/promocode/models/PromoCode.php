@@ -56,7 +56,7 @@ class PromoCode extends CoreModel implements ApiInterface
      */
     public static function tableName()
     {
-        return '{{%promo_code}}';
+        return 'promo_code';
     }
 
     /**
@@ -121,7 +121,9 @@ class PromoCode extends CoreModel implements ApiInterface
         if ($insert) {
             $this->createdAt = time();
         }
-        $this->updatedAt = time();
+        if ($this->getDirtyAttributes()) {
+            $this->updatedAt = time();
+        }
 
         return parent::beforeSave($insert);
     }
@@ -133,7 +135,7 @@ class PromoCode extends CoreModel implements ApiInterface
     {
         /** @var User $class */
         $class = $this->userModelClass;
-        return $this->hasOne($class::class, ['id' => 'userId']);
+        return $this->hasOne($class, ['id' => 'userId']);
     }
 
     /**

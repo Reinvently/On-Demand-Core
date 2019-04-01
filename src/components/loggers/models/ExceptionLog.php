@@ -36,9 +36,13 @@ use yii\web\Request;
  */
 class ExceptionLog extends CoreModel
 {
-    const DB_TYPE_TEXT_LENGTH = 0xffff;
+//    const DB_TYPE_TEXT_LENGTH = 0xfffe;
 
-    static public function saveException(\Exception $e, $isFailed = false)
+    /**
+     * @param \Throwable $e
+     * @param bool $isFailed
+     */
+    static public function saveException($e, $isFailed = false)
     {
         try {
             $exceptionLog = new static();
@@ -85,11 +89,20 @@ class ExceptionLog extends CoreModel
     {
         return [
             [['datetime', 'userId', 'lineFile', 'ip'], 'integer'],
-            [['message', 'stackTrace'], 'string'],
-            [['route', 'fileName'], 'string', 'max' => 255],
-            [['request'], 'string', 'max' => static::DB_TYPE_TEXT_LENGTH],
             [['request'], 'filter', 'filter' => '\yii\helpers\HtmlPurifier::process'],
+//            [['route', 'fileName'], 'string', 'max' => 255],
+//            [['request', 'message', 'stackTrace'], 'string', 'max' => static::DB_TYPE_TEXT_LENGTH],
         ];
+    }
+
+    public function afterValidate()
+    {
+        $this->request = mb_substr($this->request, 0, 0xfffe, 'ASCII');
+        $this->message = mb_substr($this->message, 0, 0xfffe, 'ASCII');
+        $this->stackTrace = mb_substr($this->stackTrace, 0, 0xfffe, 'ASCII');
+        $this->route = mb_substr($this->route, 0, 255, 'ASCII');
+        $this->fileName = mb_substr($this->fileName, 0, 255, 'ASCII');
+        return parent::afterValidate();
     }
 
     /**

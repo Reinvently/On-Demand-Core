@@ -6,6 +6,8 @@
  */
 
 
+namespace reinvently\ondemand\core\modules\servicearea\migrations;
+
 use yii\db\Migration;
 
 /**

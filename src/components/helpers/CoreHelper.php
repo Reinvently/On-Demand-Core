@@ -6,6 +6,10 @@
  */
 
 namespace reinvently\ondemand\core\components\helpers;
+use reinvently\ondemand\core\components\loggers\models\ExceptionLog;
+use reinvently\ondemand\core\exceptions\LogicException;
+use yii\base\InvalidArgumentException;
+use yii\helpers\Json;
 
 /**
  * Class CoreHelper
@@ -45,4 +49,58 @@ class CoreHelper
         }
         return $string;
     }
+
+
+    /**
+     * @param string $type
+     * @param mixed $value
+     * @return bool|float|int|null|string
+     * @throws LogicException
+     */
+    public static function apiTypeConversion($type, $value) {
+        if ($value === null) {
+            return null;
+        }
+
+        switch ($type) {
+            case 'int':
+            case 'integer':
+                return (int) $value;
+            case 'bool':
+            case 'boolean':
+                return (bool) $value;
+            case 'float':
+            case 'double':
+            case 'real':
+                return (double) $value;
+            case 'string':
+                return (string) $value;
+        }
+
+        throw new LogicException('undefined type: ' . $type);
+    }
+
+    /**
+     * @return string
+     */
+    public static function getEnvironment()
+    {
+        return require(\Yii::getAlias('@app') . '/environment.php');
+    }
+
+    /**
+     * @param string $curlResponse
+     * @return array|null
+     */
+    static public function jsonSaveDecode($curlResponse) {
+        try {
+            return Json::decode($curlResponse);
+        } catch (InvalidArgumentException $e) {
+            ExceptionLog::saveException(new \Exception('Invalid JSON. Response: ' . $curlResponse));
+            ExceptionLog::saveException($e);
+        }
+
+        return null;
+    }
+
 }

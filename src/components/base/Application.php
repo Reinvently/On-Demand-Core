@@ -21,6 +21,7 @@ use reinvently\ondemand\core\modules\stats\StatsComponent;
 use reinvently\ondemand\core\modules\user\models\User;
 use reinvently\ondemand\core\vendor\mapsdirections\google\Directions;
 use reinvently\ondemand\core\vendor\paymentbraintree\Braintree;
+use Reinvently\Twilio\Twilio;
 use yii\mongodb\Connection;
 
 /**
@@ -32,7 +33,9 @@ use yii\mongodb\Connection;
  * @property User $user
  * @property Category category
  * @property Connection mongodb
- *
+ * @property \yii\authclient\Collection authClientCollection
+ * @property Twilio twilio
+ * @property \understeam\fcm\Client fcm
  */
 class Application extends \yii\web\Application
 {
